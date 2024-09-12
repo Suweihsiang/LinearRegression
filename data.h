@@ -11,6 +11,7 @@
 using namespace::std;
 using namespace Eigen;
 
+template<typename T>
 class Data {
 public:
 	Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand);
@@ -20,7 +21,6 @@ public:
 	vector<string> getFeatures() const;
 	vector<string>getIndexs() const;
 	vector<string>getData() const;
-	template<typename T>
 	MatrixX<T> to_Matrix();
 	vector<string> camma_remove(string data_string);
 private:
