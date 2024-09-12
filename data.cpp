@@ -1,7 +1,6 @@
 #include"data.h"
 
-template<typename T>
-Data<T>::Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand) {
+Data::Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand) {
 	ifstream ifs(path);
 	string data;
 	bool hasFeature = FeatureFirst;
@@ -37,8 +36,7 @@ Data<T>::Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand) {
 	rows = datas.size() / columns;
 }
 
-template<typename T>
-vector<string> Data<T>::split(string s, char dec) {
+vector<string> Data::split(string s, char dec) {
 	istringstream iss(s);
 	string subs;
 	vector<string>sv;
@@ -48,18 +46,16 @@ vector<string> Data<T>::split(string s, char dec) {
 	return sv;
 }
 
-template<typename T>
-int Data<T>::getRows() const {
+int Data::getRows() const {
 	return rows;
 }
 
-template<typename T>
-int Data<T>::getColumns() const {
+int Data::getColumns() const {
 	return columns;
 }
 
 template<typename T>
-MatrixX<T> Data<T>::to_Matrix() {
+MatrixX<T> Data::to_Matrix() {
 	vector<T> dm;
 	for (string data : datas) {
 		istringstream iss(data);
@@ -71,23 +67,19 @@ MatrixX<T> Data<T>::to_Matrix() {
 	return mat;
 }
 
-template<typename T>
-vector<string> Data<T>::getFeatures() const {
+vector<string> Data::getFeatures() const {
 	return features;
 }
 
-template<typename T>
-vector<string> Data<T>::getIndexs() const {
+vector<string> Data::getIndexs() const {
 	return indexes;
 }
 
-template<typename T>
-vector<string> Data<T>::getData() const {
+vector<string> Data::getData() const {
 	return datas;
 }
 
-template<typename T>
-vector<string> Data<T>::camma_remove(string data) {
+vector<string> Data::camma_remove(string data) {
 	vector<string>numeric_data;
 	size_t begin, end;
 	do {
