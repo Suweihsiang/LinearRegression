@@ -19,9 +19,11 @@ Data<T>::Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand) {
 				indexes.push_back(data.substr(0,data.find(',')));
 			}
 			vector<string>cols = camma_remove(data);
+			vector<string>row_datas;
 			for (string col : cols) {
-				datas.push_back(col);
+				row_datas.push_back(col);
 			}
+			datas.push_back(row_datas);
 		}
 		else {
 			vector<string> cols = split(data, ',');
@@ -29,12 +31,14 @@ Data<T>::Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand) {
 				indexes.push_back(cols[0]);
 				cols.erase(cols.begin());
 			}
+			vector<string>row_datas;
 			for (string col : cols) {
-				datas.push_back(col);
+				row_datas.push_back(col);
 			}
+			datas.push_back(row_datas);
 		}
 	}
-	rows = datas.size() / columns;
+	rows = datas.size();
 }
 
 template<typename T>
@@ -60,6 +64,24 @@ int Data<T>::getColumns() const {
 
 template<typename T>
 MatrixX<T> Data<T>::to_Matrix() {
+	Matrix<T, Dynamic, Dynamic>mat(rows, columns);
+	int r = 0, c = 0;
+	for (vector<string> row : datas) {
+		for (string col : row) {
+			istringstream iss(col);
+			T data_t;
+			iss >> data_t;
+			mat(r, c) = data_t;
+			c++;
+		}
+		r++;
+		c = 0;
+	}
+	return mat;
+}
+
+/*template<typename T>
+MatrixX<T> Data<T>::to_Matrix() {
 	vector<T> dm;
 	for (string data : datas) {
 		istringstream iss(data);
@@ -69,7 +91,7 @@ MatrixX<T> Data<T>::to_Matrix() {
 	}
 	Map<Matrix<T, Dynamic, Dynamic, RowMajor>>mat(dm.data(), rows, columns);
 	return mat;
-}
+}*/
 
 template<typename T>
 vector<string> Data<T>::getFeatures() const {
@@ -82,7 +104,7 @@ vector<string> Data<T>::getIndexs() const {
 }
 
 template<typename T>
-vector<string> Data<T>::getData() const {
+vector<vector<string>> Data<T>::getData() const {
 	return datas;
 }
 

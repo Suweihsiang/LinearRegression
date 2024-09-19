@@ -20,7 +20,7 @@ public:
 	int getColumns() const;
 	vector<string> getFeatures() const;
 	vector<string>getIndexs() const;
-	vector<string>getData() const;
+	vector<vector<string>>getData() const;
 	MatrixX<T> to_Matrix();
 	vector<string> camma_remove(string data_string);
 private:
@@ -30,7 +30,7 @@ private:
 	bool hasIndexRows;
 	vector<string>features;
 	vector<string>indexes;
-	vector<string>datas;
+	vector<vector<string>>datas;
 };
 
 #endif
