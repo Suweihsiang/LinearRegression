@@ -5,7 +5,6 @@ using namespace::std;
 int main(int argc, char** argv) {
     string path = argv[1];
     Data<float> df(path, true, true, true);
-    MatrixX<float> mat = df.to_Matrix();
-    cout << mat << endl;
+    cout << df.getMatrix() << endl;
     return 0;
 }

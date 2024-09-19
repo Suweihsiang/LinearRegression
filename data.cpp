@@ -39,6 +39,7 @@ Data<T>::Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand) {
 		}
 	}
 	rows = datas.size();
+	mat = to_Matrix();
 }
 
 template<typename T>
@@ -63,6 +64,11 @@ int Data<T>::getColumns() const {
 }
 
 template<typename T>
+Matrix<T, Dynamic, Dynamic> Data<T>::getMatrix() const {
+	return mat;
+}
+
+template<typename T>
 MatrixX<T> Data<T>::to_Matrix() {
 	Matrix<T, Dynamic, Dynamic>mat(rows, columns);
 	int r = 0, c = 0;
@@ -79,19 +85,6 @@ MatrixX<T> Data<T>::to_Matrix() {
 	}
 	return mat;
 }
-
-/*template<typename T>
-MatrixX<T> Data<T>::to_Matrix() {
-	vector<T> dm;
-	for (string data : datas) {
-		istringstream iss(data);
-		T data_t;
-		iss >> data_t;
-		dm.push_back(data_t);
-	}
-	Map<Matrix<T, Dynamic, Dynamic, RowMajor>>mat(dm.data(), rows, columns);
-	return mat;
-}*/
 
 template<typename T>
 vector<string> Data<T>::getFeatures() const {

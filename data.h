@@ -18,6 +18,7 @@ public:
 	vector<string> split(string s, char dec);
 	int getRows() const;
 	int getColumns() const;
+	Matrix<T, Dynamic, Dynamic> getMatrix() const;
 	vector<string> getFeatures() const;
 	vector<string>getIndexs() const;
 	vector<vector<string>>getData() const;
@@ -31,6 +32,7 @@ private:
 	vector<string>features;
 	vector<string>indexes;
 	vector<vector<string>>datas;
+	Matrix<T, Dynamic, Dynamic>mat;
 };
 
 #endif
