@@ -21,8 +21,6 @@ public:
 	Matrix<T, Dynamic, Dynamic> getMatrix() const;
 	vector<string> getFeatures() const;
 	vector<string>getIndexs() const;
-	vector<vector<string>>getData() const;
-	MatrixX<T> to_Matrix();
 	vector<string> camma_remove(string data_string);
 private:
 	int rows = 0;
@@ -31,8 +29,7 @@ private:
 	bool hasIndexRows;
 	vector<string>features;
 	vector<string>indexes;
-	vector<vector<string>>datas;
-	Matrix<T, Dynamic, Dynamic>mat;
+	Matrix<T,Dynamic,Dynamic>mat;
 };
 
 #endif

@@ -7,23 +7,27 @@ Data<T>::Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand) {
 	bool hasFeature = FeatureFirst;
 	hasFeatureColumns = FeatureFirst;
 	hasIndexRows = IndexFirst;
+	getline(ifs, data);
+	if (hasFeature) {
+		features = split(data, ',');
+		columns = IndexFirst ? features.size() - 1 : features.size();
+	}
+	mat.conservativeResize(0, columns);
+	int r = 0, c = 0;
 	while (getline(ifs, data)) {
-		if (hasFeature) {
-			features = split(data, ',');
-			columns = IndexFirst ? features.size()-1:features.size();
-			hasFeature = false;
-			continue;
-		}
+		mat.conservativeResize(mat.rows() + 1, columns);
 		if (isThousand) {
 			if (hasIndexRows) {
 				indexes.push_back(data.substr(0,data.find(',')));
 			}
 			vector<string>cols = camma_remove(data);
-			vector<string>row_datas;
 			for (string col : cols) {
-				row_datas.push_back(col);
+				istringstream iss(col);
+				T temp_col;
+				iss >> temp_col;
+				mat(r,c) = temp_col;
+				c++;
 			}
-			datas.push_back(row_datas);
 		}
 		else {
 			vector<string> cols = split(data, ',');
@@ -31,15 +35,18 @@ Data<T>::Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand) {
 				indexes.push_back(cols[0]);
 				cols.erase(cols.begin());
 			}
-			vector<string>row_datas;
 			for (string col : cols) {
-				row_datas.push_back(col);
+				istringstream iss(col);
+				T temp_col;
+				iss >> temp_col;
+				mat(r,c) = temp_col;
+				c++;
 			}
-			datas.push_back(row_datas);
 		}
+		r++;
+		c = 0;
 	}
-	rows = datas.size();
-	mat = to_Matrix();
+	rows = mat.rows();
 }
 
 template<typename T>
@@ -69,24 +76,6 @@ Matrix<T, Dynamic, Dynamic> Data<T>::getMatrix() const {
 }
 
 template<typename T>
-MatrixX<T> Data<T>::to_Matrix() {
-	Matrix<T, Dynamic, Dynamic>mat(rows, columns);
-	int r = 0, c = 0;
-	for (vector<string> row : datas) {
-		for (string col : row) {
-			istringstream iss(col);
-			T data_t;
-			iss >> data_t;
-			mat(r, c) = data_t;
-			c++;
-		}
-		r++;
-		c = 0;
-	}
-	return mat;
-}
-
-template<typename T>
 vector<string> Data<T>::getFeatures() const {
 	return features;
 }
@@ -94,11 +83,6 @@ vector<string> Data<T>::getFeatures() const {
 template<typename T>
 vector<string> Data<T>::getIndexs() const {
 	return indexes;
-}
-
-template<typename T>
-vector<vector<string>> Data<T>::getData() const {
-	return datas;
 }
 
 template<typename T>
