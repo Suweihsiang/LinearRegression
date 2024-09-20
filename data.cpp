@@ -46,6 +46,10 @@ Data<T>::Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand) {
 		r++;
 		c = 0;
 	}
+	if (*indexes.begin() > *(indexes.end() - 1)) {
+		reverse(indexes.begin(), indexes.end());
+		mat = mat.colwise().reverse().eval();
+	}
 	rows = mat.rows();
 }
 
@@ -100,4 +104,41 @@ vector<string> Data<T>::camma_remove(string data) {
 		data = data.substr(begin + end + 2);
 	} while (data.find('"') != data.npos);
 	return numeric_data;
+}
+
+template<typename T>
+void Data<T>::removeRow(int RowToRemove) {
+	mat.block(RowToRemove, 0, mat.rows() - RowToRemove-1, mat.cols()) = mat.block(RowToRemove + 1, 0, mat.rows() - RowToRemove-1, mat.cols());
+	mat.conservativeResize(mat.rows() - 1, mat.cols());
+}
+
+template<typename T>
+void Data<T>::merge(Data df2) {
+	vector<string> features2 = df2.getFeatures();
+	vector<string> indexes2 = df2.getIndexs();
+	for (string feature : features2) {
+		if (find(features.begin(),features.end(),feature) == features.end()) {
+			features.push_back(feature);
+		}
+		else {
+			features.push_back(feature + "_x");
+		}
+	}
+	int remove_count = 0;
+	for (int i = 0; i < indexes2.size(); i++) {
+		if (find(indexes.begin(),indexes.end(),indexes2[i]) == indexes.end()) {
+			df2.removeRow(i-remove_count);
+			remove_count++;
+		}
+	}
+	remove_count = 0;
+	for (int i = 0; i < indexes.size(); i++) {
+		if (find(indexes2.begin(), indexes2.end(),indexes[i]) == indexes2.end()) {
+			removeRow(i-remove_count);
+			remove_count++;
+		}
+	}
+	Matrix<T, Dynamic, Dynamic> mat2 = df2.getMatrix();
+	mat.conservativeResize(mat.rows(), mat.cols() + mat2.cols());
+	mat.block(0, mat.cols() - mat2.cols(), mat2.rows(), mat2.cols()) = mat2;
 }

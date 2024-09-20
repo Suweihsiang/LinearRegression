@@ -22,6 +22,8 @@ public:
 	vector<string> getFeatures() const;
 	vector<string>getIndexs() const;
 	vector<string> camma_remove(string data_string);
+	void removeRow(int RowToRemove);
+	void merge(Data df2);
 private:
 	int rows = 0;
 	int columns = 0;
