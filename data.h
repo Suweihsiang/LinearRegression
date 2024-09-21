@@ -7,6 +7,7 @@
 #include<string>
 #include<vector>
 #include<algorithm>
+#include<unordered_map>
 
 using namespace::std;
 using namespace Eigen;
@@ -14,6 +15,7 @@ using namespace Eigen;
 template<typename T>
 class Data {
 public:
+	Data(unordered_map<string, vector<string>>m, bool IndexFirst);
 	Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand);
 	vector<string> split(string s, char dec);
 	int getRows() const;

@@ -1,6 +1,45 @@
 #include"data.h"
 
 template<typename T>
+Data<T>::Data(unordered_map<string, vector<string>>m, bool IndexFirst) :rows((m.begin()->second).size()), columns(m.size()), hasFeatureColumns(true), hasIndexRows(IndexFirst) {
+	auto it = m.begin();
+	if (hasIndexRows) {
+		features.push_back(it->first);
+		indexes = it->second;
+		mat.conservativeResize(rows, columns-1);
+		for (int c = 1; c < columns; c++) {
+			it++;
+			features.push_back(it->first);
+			for (int r = 0; r < rows; r++) {
+				string s_val = it->second[r];
+				istringstream iss(s_val);
+				T T_val;
+				iss >> T_val;
+				mat(r, c-1) = T_val;
+			}
+		}
+	}
+	else {
+		mat.conservativeResize(rows, columns);
+		for (int c = 0; c < columns; c++) {
+			features.push_back(it->first);
+			for (int r = 0; r < rows; r++) {
+				string s_val = it->second[r];
+				istringstream iss(s_val);
+				T T_val;
+				iss >> T_val;
+				mat(r, c) = T_val;
+			}
+			it++;
+		}
+	}
+	if (IndexFirst && *indexes.begin() > *(indexes.end() - 1)) {
+		reverse(indexes.begin(), indexes.end());
+		mat = mat.colwise().reverse().eval();
+	}
+}
+
+template<typename T>
 Data<T>::Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand) {
 	ifstream ifs(path);
 	string data;
@@ -46,7 +85,7 @@ Data<T>::Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand) {
 		r++;
 		c = 0;
 	}
-	if (*indexes.begin() > *(indexes.end() - 1)) {
+	if (IndexFirst && *indexes.begin() > *(indexes.end() - 1)) {
 		reverse(indexes.begin(), indexes.end());
 		mat = mat.colwise().reverse().eval();
 	}
