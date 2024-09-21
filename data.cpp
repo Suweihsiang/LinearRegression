@@ -58,14 +58,29 @@ Data<T>::Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand) {
 		if (isThousand) {
 			if (hasIndexRows) {
 				indexes.push_back(data.substr(0,data.find(',')));
+				vector<string>cols = camma_remove(data);
+				for (string col : cols) {
+					istringstream iss(col);
+					T T_val;
+					iss >> T_val;
+					mat(r, c) = T_val;
+					c++;
+				}
 			}
-			vector<string>cols = camma_remove(data);
-			for (string col : cols) {
-				istringstream iss(col);
-				T temp_col;
-				iss >> temp_col;
-				mat(r,c) = temp_col;
+			else {
+				istringstream is(data.substr(0, data.find(',')));
+				T T_date;
+				is >> T_date;
+				mat(r, c) = T_date;
 				c++;
+				vector<string>cols = camma_remove(data);
+				for (string col : cols) {
+					istringstream iss(col);
+					T T_val;
+					iss >> T_val;
+					mat(r, c) = T_val;
+					c++;
+				}
 			}
 		}
 		else {
@@ -73,13 +88,22 @@ Data<T>::Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand) {
 			if (hasIndexRows) {
 				indexes.push_back(cols[0]);
 				cols.erase(cols.begin());
+				for (string col : cols) {
+					istringstream iss(col);
+					T T_val;
+					iss >> T_val;
+					mat(r, c) = T_val;
+					c++;
+				}
 			}
-			for (string col : cols) {
-				istringstream iss(col);
-				T temp_col;
-				iss >> temp_col;
-				mat(r,c) = temp_col;
-				c++;
+			else {
+				for (string col : cols) {
+					istringstream iss(col);
+					T T_val;
+					iss >> T_val;
+					mat(r, c) = T_val;
+					c++;
+				}
 			}
 		}
 		r++;
@@ -164,20 +188,56 @@ void Data<T>::merge(Data df2) {
 		}
 	}
 	int remove_count = 0;
-	for (int i = 0; i < indexes2.size(); i++) {
+	for (int i = 0; i < df2.getRows(); i++) {
 		if (find(indexes.begin(),indexes.end(),indexes2[i]) == indexes.end()) {
 			df2.removeRow(i-remove_count);
 			remove_count++;
 		}
 	}
 	remove_count = 0;
-	for (int i = 0; i < indexes.size(); i++) {
+	vector<int>rm_idx;
+	for (int i = 0; i < getRows(); i++) {
 		if (find(indexes2.begin(), indexes2.end(),indexes[i]) == indexes2.end()) {
 			removeRow(i-remove_count);
+			rm_idx.push_back(i-remove_count);
 			remove_count++;
 		}
 	}
+	for (int idx : rm_idx) {
+		auto it = indexes.erase(indexes.begin() + idx);
+	}
+	rows = indexes.size();
+	columns = features.size();
 	Matrix<T, Dynamic, Dynamic> mat2 = df2.getMatrix();
 	mat.conservativeResize(mat.rows(), mat.cols() + mat2.cols());
 	mat.block(0, mat.cols() - mat2.cols(), mat2.rows(), mat2.cols()) = mat2;
+}
+
+template<typename T>
+void Data<T>::addRows(vector<vector<string>>addrows) {
+	size_t r = addrows.size();
+	size_t c = addrows[0].size();
+	mat.conservativeResize(mat.rows() + r, mat.cols());
+	if (hasIndexRows) {
+		for (int i = 0; i < r; i++) {
+			indexes.push_back(addrows[i][0]);
+			for (int j = 1; j < c; j++) {
+				istringstream iss(addrows[i][j]);
+				T T_val;
+				iss >> T_val;
+				mat(mat.rows() - r + i, j - 1) = T_val;
+			}
+		}
+	}
+	else {
+		for (int i = 0; i < r; i++) {
+			for (int j = 0; j < c; j++) {
+				istringstream iss(addrows[i][j]);
+				T T_val;
+				iss >> T_val;
+				mat(mat.rows() - r + i, j) = T_val;
+			}
+		}
+	}
+	rows += r;
 }

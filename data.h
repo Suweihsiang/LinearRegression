@@ -26,6 +26,7 @@ public:
 	vector<string> camma_remove(string data_string);
 	void removeRow(int RowToRemove);
 	void merge(Data df2);
+	void addRows(vector<vector<string>>rows);
 private:
 	int rows = 0;
 	int columns = 0;
