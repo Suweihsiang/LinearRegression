@@ -176,6 +176,18 @@ void Data<T>::removeRow(int RowToRemove) {
 }
 
 template<typename T>
+void Data<T>::removeRows(vector<string>idxs) {
+	for (string idx : idxs) {
+		auto it = indexes.erase(find(indexes.begin(), indexes.end(), idx));
+		int dist = distance(indexes.begin(), it);
+		cout << dist << "\t";
+		mat.block(dist, 0, mat.rows() - dist-1, mat.cols()) = mat.block(dist + 1, 0, mat.rows() - dist-1, mat.cols());
+		mat.conservativeResize(mat.rows() - 1, mat.cols());
+	}
+	rows = indexes.size();
+}
+
+template<typename T>
 void Data<T>::merge(Data df2) {
 	vector<string> features2 = df2.getFeatures();
 	vector<string> indexes2 = df2.getIndexs();
