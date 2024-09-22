@@ -4,7 +4,7 @@ template<typename T>
 Data<T>::Data(unordered_map<string, vector<string>>m, bool IndexFirst) :rows((m.begin()->second).size()), columns(m.size()), hasIndexRows(IndexFirst) {
 	auto it = m.begin();
 	if (hasIndexRows) {
-		features.push_back(it->first);
+		index_name = it->first;
 		indexes = it->second;
 		mat.conservativeResize(rows, columns-1);
 		for (int c = 1; c < columns; c++) {
@@ -41,12 +41,17 @@ Data<T>::Data(unordered_map<string, vector<string>>m, bool IndexFirst) :rows((m.
 
 template<typename T>
 Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
+	istringstream namess(path);
+	getline(namess, data_name, '.');
+	data_name = data_name.substr(data_name.rfind('/')+1, data_name.size());
 	ifstream ifs(path);
 	string data;
 	hasIndexRows = IndexFirst;
 	getline(ifs, data);
 	features = split(data, ',');
-	columns = IndexFirst ? features.size() - 1 : features.size();
+	index_name = features[0];
+	features.erase(features.begin());
+	columns = features.size();
 	mat.conservativeResize(0, columns);
 	int r = 0, c = 0;
 	while (getline(ifs, data)) {
@@ -174,12 +179,15 @@ void Data<T>::removeRow(int RowToRemove) {
 template<typename T>
 void Data<T>::removeRows(vector<string>idxs) {
 	for (string idx : idxs) {
-		auto it = indexes.erase(find(indexes.begin(), indexes.end(), idx));
-		int dist = distance(indexes.begin(), it);
-		mat.block(dist, 0, mat.rows() - dist-1, mat.cols()) = mat.block(dist + 1, 0, mat.rows() - dist-1, mat.cols());
-		mat.conservativeResize(mat.rows() - 1, mat.cols());
+		auto it = find(indexes.begin(), indexes.end(), idx);
+		if (it != indexes.end()) {
+			auto next = indexes.erase(it);
+			int dist = distance(indexes.begin(), next);
+			mat.block(dist, 0, mat.rows() - dist - 1, mat.cols()) = mat.block(dist + 1, 0, mat.rows() - dist - 1, mat.cols());
+			mat.conservativeResize(mat.rows() - 1, mat.cols());
+			rows--;
+		}
 	}
-	rows = indexes.size();
 }
 
 template<typename T>
@@ -191,7 +199,7 @@ void Data<T>::merge(Data df2) {
 			features.push_back(feature);
 		}
 		else {
-			features.push_back(feature + "_x");
+			features.push_back(feature + "_" + df2.data_name);
 		}
 	}
 	int remove_count = 0;
@@ -247,4 +255,31 @@ void Data<T>::addRows(vector<vector<string>>addrows) {
 		}
 	}
 	rows += r;
+}
+
+template<typename T>
+void Data<T>::removeColumns(vector<string>fts) {
+	for (string ft : fts) {
+		auto it = find(features.begin(), features.end(), ft);
+		if (it != features.end()) {
+			auto next = features.erase(it);
+			int dist = distance(features.begin(), next);
+			mat.block(0, dist, rows, columns - dist - 1) = mat.block(0, dist, rows, columns - dist - 1);
+			mat.conservativeResize(mat.rows(), mat.cols() - 1);
+			columns--;
+		}
+	}
+}
+
+template<typename T>
+void Data<T>::print() {
+	cout << index_name << "\t"<<" ";
+	for (string feature : features) {
+		cout << feature << "\t"<<" ";
+	}
+	cout << endl;
+	for (int i = 0; i < rows; i++) {
+		cout << indexes[i] << " ";
+		cout << mat.row(i) << endl;
+	}
 }

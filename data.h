@@ -28,10 +28,14 @@ public:
 	void removeRows(vector<string>idxs);
 	void merge(Data df2);
 	void addRows(vector<vector<string>>rows);
+	void removeColumns(vector<string>fts);
+	void print();
 private:
+	string data_name;
 	int rows = 0;
 	int columns = 0;
 	bool hasIndexRows;
+	string index_name;
 	vector<string>features;
 	vector<string>indexes;
 	Matrix<T,Dynamic,Dynamic>mat;
