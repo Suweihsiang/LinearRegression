@@ -30,6 +30,7 @@ public:
 	void addRows(vector<vector<string>>rows);
 	void removeColumns(vector<string>fts);
 	void print();
+	void to_csv(string path);
 private:
 	string data_name;
 	int rows = 0;

@@ -283,3 +283,19 @@ void Data<T>::print() {
 		cout << mat.row(i) << endl;
 	}
 }
+
+template<typename T>
+void Data<T>::to_csv(string path) {
+	ofstream dataFile;
+	dataFile.open(path, ios::out | ios::trunc);
+	dataFile << index_name << " ";
+	for (string feature : features) {
+		dataFile << feature << " ";
+	}
+	dataFile << endl;
+	for (int r = 0; r < rows; r++) {
+		dataFile << indexes[r] << " " << mat.row(r);
+		dataFile << endl;
+	}
+	dataFile.close();
+}
