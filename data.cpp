@@ -1,7 +1,7 @@
 #include"data.h"
 
 template<typename T>
-Data<T>::Data(unordered_map<string, vector<string>>m, bool IndexFirst) :rows((m.begin()->second).size()), columns(m.size()), hasFeatureColumns(true), hasIndexRows(IndexFirst) {
+Data<T>::Data(unordered_map<string, vector<string>>m, bool IndexFirst) :rows((m.begin()->second).size()), columns(m.size()), hasIndexRows(IndexFirst) {
 	auto it = m.begin();
 	if (hasIndexRows) {
 		features.push_back(it->first);
@@ -40,17 +40,13 @@ Data<T>::Data(unordered_map<string, vector<string>>m, bool IndexFirst) :rows((m.
 }
 
 template<typename T>
-Data<T>::Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand) {
+Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 	ifstream ifs(path);
 	string data;
-	bool hasFeature = FeatureFirst;
-	hasFeatureColumns = FeatureFirst;
 	hasIndexRows = IndexFirst;
 	getline(ifs, data);
-	if (hasFeature) {
-		features = split(data, ',');
-		columns = IndexFirst ? features.size() - 1 : features.size();
-	}
+	features = split(data, ',');
+	columns = IndexFirst ? features.size() - 1 : features.size();
 	mat.conservativeResize(0, columns);
 	int r = 0, c = 0;
 	while (getline(ifs, data)) {
@@ -180,7 +176,6 @@ void Data<T>::removeRows(vector<string>idxs) {
 	for (string idx : idxs) {
 		auto it = indexes.erase(find(indexes.begin(), indexes.end(), idx));
 		int dist = distance(indexes.begin(), it);
-		cout << dist << "\t";
 		mat.block(dist, 0, mat.rows() - dist-1, mat.cols()) = mat.block(dist + 1, 0, mat.rows() - dist-1, mat.cols());
 		mat.conservativeResize(mat.rows() - 1, mat.cols());
 	}

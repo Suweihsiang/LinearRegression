@@ -16,7 +16,7 @@ template<typename T>
 class Data {
 public:
 	Data(unordered_map<string, vector<string>>m, bool IndexFirst);
-	Data(string path,bool FeatureFirst,bool IndexFirst,bool isThousand);
+	Data(string path,bool IndexFirst,bool isThousand);
 	vector<string> split(string s, char dec);
 	int getRows() const;
 	int getColumns() const;
@@ -31,7 +31,6 @@ public:
 private:
 	int rows = 0;
 	int columns = 0;
-	bool hasFeatureColumns;
 	bool hasIndexRows;
 	vector<string>features;
 	vector<string>indexes;
