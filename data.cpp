@@ -134,7 +134,7 @@ Data<T> Data<T>::operator[](vector<string>fts) {
 			d_fts.mat.conservativeResize(rows, c + 1);
 			d_fts.features.push_back(ft);
 			size_t dist = distance(features.begin(), it);
-			d_fts.mat.block(0, c, rows, 1) = mat.block(0, dist, rows, 1);
+			d_fts.mat.col(c) = mat.col(dist);
 			c++;
 		}
 	}
@@ -152,6 +152,11 @@ vector<string> Data<T>::split(string s, char dec) {
 		sv.push_back(subs);
 	}
 	return sv;
+}
+
+template<typename T>
+void Data<T>::setDataname(string _data_name) {
+	data_name = _data_name;
 }
 
 template<typename T>

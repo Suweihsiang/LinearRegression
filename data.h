@@ -20,6 +20,7 @@ public:
 	Data(string path,bool IndexFirst,bool isThousand);
 	Data<T> operator[](vector<string> fts);
 	vector<string> split(string s, char dec);
+	void setDataname(string _data_name);
 	string getDataname() const;
 	int getRows() const;
 	int getColumns() const;
