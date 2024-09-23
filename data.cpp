@@ -49,9 +49,14 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 	string data;
 	hasIndexRows = IndexFirst;
 	getline(ifs, data);
-	features = split(data, ',');
-	index_name = features[0];
-	features.erase(features.begin());
+	if (hasIndexRows) {
+		features = split(data, ',');
+		index_name = features[0];
+		features.erase(features.begin());
+	}
+	else {
+		features = split(data, ',');
+	}
 	columns = features.size();
 	mat.conservativeResize(0, columns);
 	int r = 0, c = 0;
@@ -309,13 +314,17 @@ void Data<T>::removeColumns(vector<string>fts) {
 
 template<typename T>
 void Data<T>::print() {
-	cout << index_name << "\t"<<" ";
+	if (hasIndexRows) {
+		cout << index_name << "\t" << " ";
+	}
 	for (string feature : features) {
 		cout << feature << "\t"<<" ";
 	}
 	cout << endl;
 	for (int i = 0; i < rows; i++) {
-		cout << indexes[i] << " ";
+		if (hasIndexRows) {
+			cout << indexes[i] << " ";
+		}
 		cout << mat.row(i) << endl;
 	}
 }
@@ -324,13 +333,18 @@ template<typename T>
 void Data<T>::to_csv(string path) {
 	ofstream dataFile;
 	dataFile.open(path, ios::out | ios::trunc);
-	dataFile << index_name << " ";
+	if (hasIndexRows) {
+		dataFile << index_name << " ";
+	}
 	for (string feature : features) {
 		dataFile << feature << " ";
 	}
 	dataFile << endl;
 	for (int r = 0; r < rows; r++) {
-		dataFile << indexes[r] << " " << mat.row(r);
+		if (hasIndexRows) {
+			dataFile << indexes[r] << " ";
+		}
+		dataFile<< mat.row(r);
 		dataFile << endl;
 	}
 	dataFile.close();
