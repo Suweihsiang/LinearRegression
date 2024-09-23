@@ -1,6 +1,9 @@
 #include"data.h"
 
 template<typename T>
+Data<T>::Data() {}
+
+template<typename T>
 Data<T>::Data(unordered_map<string, vector<string>>m, bool IndexFirst) :rows((m.begin()->second).size()), columns(m.size()), hasIndexRows(IndexFirst) {
 	auto it = m.begin();
 	if (hasIndexRows) {
@@ -41,9 +44,7 @@ Data<T>::Data(unordered_map<string, vector<string>>m, bool IndexFirst) :rows((m.
 
 template<typename T>
 Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
-	istringstream namess(path);
-	getline(namess, data_name, '.');
-	data_name = data_name.substr(data_name.rfind('/')+1, data_name.size());
+	data_name = path.substr(path.rfind('/') + 1, path.rfind('.') - path.rfind('/') - 1);
 	ifstream ifs(path);
 	string data;
 	hasIndexRows = IndexFirst;
@@ -118,6 +119,31 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 }
 
 template<typename T>
+Data<T> Data<T>::operator[](vector<string>fts) {
+	Data<T> d_fts;
+	d_fts.data_name = data_name;
+	d_fts.hasIndexRows = hasIndexRows;
+	if (hasIndexRows) {
+		d_fts.index_name = index_name;
+		d_fts.indexes = indexes;
+	}
+	int c = 0;
+	for (string ft : fts) {
+		auto it = find(features.begin(), features.end(), ft);
+		if (it != features.end()) {
+			d_fts.mat.conservativeResize(rows, c + 1);
+			d_fts.features.push_back(ft);
+			size_t dist = distance(features.begin(), it);
+			d_fts.mat.block(0, c, rows, 1) = mat.block(0, dist, rows, 1);
+			c++;
+		}
+	}
+	d_fts.rows = rows;
+	d_fts, columns = d_fts.mat.cols();
+	return d_fts;
+}
+
+template<typename T>
 vector<string> Data<T>::split(string s, char dec) {
 	istringstream iss(s);
 	string subs;
@@ -126,6 +152,11 @@ vector<string> Data<T>::split(string s, char dec) {
 		sv.push_back(subs);
 	}
 	return sv;
+}
+
+template<typename T>
+string Data<T>::getDataname() const {
+	return data_name;
 }
 
 template<typename T>

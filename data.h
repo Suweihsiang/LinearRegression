@@ -15,9 +15,12 @@ using namespace Eigen;
 template<typename T>
 class Data {
 public:
+	Data();
 	Data(unordered_map<string, vector<string>>m, bool IndexFirst);
 	Data(string path,bool IndexFirst,bool isThousand);
+	Data<T> operator[](vector<string> fts);
 	vector<string> split(string s, char dec);
+	string getDataname() const;
 	int getRows() const;
 	int getColumns() const;
 	Matrix<T, Dynamic, Dynamic> getMatrix() const;
