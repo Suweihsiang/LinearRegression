@@ -212,6 +212,41 @@ vector<string> Data<T>::camma_remove(string data) {
 }
 
 template<typename T>
+void Data<T>::setIndex(string index) {
+	auto it = find(features.begin(), features.end(), index);
+	if (it != features.end()) {
+		size_t dist = distance(features.begin(), it);
+		if (hasIndexRows) {
+			mat.conservativeResize(rows, columns + 1);
+			features.push_back(index_name);
+			for (int i = 0; i < rows; i++) {
+				istringstream iss(indexes[i]);
+				T T_val;
+				iss >> T_val;
+				mat(i, columns) = T_val;
+			}
+			columns++;
+			vector<T> new_indexes(mat.col(dist).data(),mat.col(dist).data() + mat.rows());
+			removeColumns({ index });
+			index_name = index;
+			indexes.clear();
+			for (T idx : new_indexes) {
+				indexes.push_back(to_string((int)idx));
+			}
+		}
+		else {
+			hasIndexRows = true;
+			vector<T> new_indexes(mat.col(dist).data(),mat.col(dist).data() + mat.rows());
+			removeColumns({ index });
+			index_name = index;
+			for (T idx : new_indexes) {
+				indexes.push_back(to_string((int)idx));
+			}
+		}
+	}
+}
+
+template<typename T>
 void Data<T>::removeRow(int RowToRemove) {
 	mat.block(RowToRemove, 0, mat.rows() - RowToRemove-1, mat.cols()) = mat.block(RowToRemove + 1, 0, mat.rows() - RowToRemove-1, mat.cols());
 	mat.conservativeResize(mat.rows() - 1, mat.cols());
@@ -299,13 +334,31 @@ void Data<T>::addRows(vector<vector<string>>addrows) {
 }
 
 template<typename T>
+void Data<T>::addColumns(unordered_map<string, vector<string>>ms) {
+	auto it = ms.begin();
+	for (int c = 0; c < ms.size(); c++) {
+		mat.conservativeResize(rows, columns + 1);
+		features.push_back(it->first);
+		for (int r = 0; r < rows; r++) {
+			string s_val = it->second[r];
+			istringstream iss(s_val);
+			T T_val;
+			iss >> T_val;
+			mat(r, columns) = T_val;
+		}
+		it++;
+		columns++;
+	}
+}
+
+template<typename T>
 void Data<T>::removeColumns(vector<string>fts) {
 	for (string ft : fts) {
 		auto it = find(features.begin(), features.end(), ft);
 		if (it != features.end()) {
 			auto next = features.erase(it);
 			int dist = distance(features.begin(), next);
-			mat.block(0, dist, rows, columns - dist - 1) = mat.block(0, dist, rows, columns - dist - 1);
+			mat.block(0, dist, rows, columns - dist - 1) = mat.block(0, dist+1, rows, columns - dist - 1);
 			mat.conservativeResize(mat.rows(), mat.cols() - 1);
 			columns--;
 		}

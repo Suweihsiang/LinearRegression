@@ -28,10 +28,12 @@ public:
 	vector<string> getFeatures() const;
 	vector<string>getIndexs() const;
 	vector<string> camma_remove(string data_string);
+	void setIndex(string index);
 	void removeRow(int RowToRemove);
 	void removeRows(vector<string>idxs);
 	void merge(Data df2);
 	void addRows(vector<vector<string>>rows);
+	void addColumns(unordered_map<string, vector<string>>m);
 	void removeColumns(vector<string>fts);
 	void print();
 	void to_csv(string path);
