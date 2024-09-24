@@ -23,14 +23,19 @@ int main(int argc, char** argv) {
     Matrix<float, Dynamic, Dynamic> mat = df.getMatrix();
     vector<float> close(mat.col(0).data(), mat.col(0).data() + df.getRows());
     vector<string> df_idxs2 = df.getIndexs();
+    int pos = 0;
+    int r = df.getRows();
     for (string ym : YM_set) {
         double sum = 0;
         int count = 0;
-        for (int i = 0; i < df.getRows(); i++) {
+        for (int i = pos; i < r; i++) {
             if (df_idxs2[i] == ym) {
-                cout << close[i] << "\t";
                 sum += close[i];
                 count++;
+                pos++;
+            }
+            else {
+                break;
             }
         }
         avgs.push_back(sum / count);
