@@ -35,6 +35,7 @@ public:
 	void addRows(vector<vector<string>>rows);
 	void addColumns(unordered_map<string, vector<string>>m);
 	void removeColumns(vector<string>fts);
+	void sortby(string feature,bool ascedning);
 	void print();
 	void to_csv(string path);
 private:

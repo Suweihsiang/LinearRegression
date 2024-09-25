@@ -36,10 +36,7 @@ Data<T>::Data(unordered_map<string, vector<string>>m, bool IndexFirst) :rows((m.
 			it++;
 		}
 	}
-	if (IndexFirst && *indexes.begin() > *(indexes.end() - 1)) {
-		reverse(indexes.begin(), indexes.end());
-		mat = mat.colwise().reverse().eval();
-	}
+	sortby(index_name, true);
 }
 
 template<typename T>
@@ -116,10 +113,7 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 		r++;
 		c = 0;
 	}
-	if (IndexFirst && *indexes.begin() > *(indexes.end() - 1)) {
-		reverse(indexes.begin(), indexes.end());
-		mat = mat.colwise().reverse().eval();
-	}
+	sortby(index_name, true);
 	rows = mat.rows();
 }
 
@@ -361,6 +355,44 @@ void Data<T>::removeColumns(vector<string>fts) {
 			mat.block(0, dist, rows, columns - dist - 1) = mat.block(0, dist+1, rows, columns - dist - 1);
 			mat.conservativeResize(mat.rows(), mat.cols() - 1);
 			columns--;
+		}
+	}
+}
+
+template<typename T>
+void Data<T>::sortby(string feature,bool ascending) {
+	if (hasIndexRows && feature == index_name) {
+		vector<pair<string, VectorX<T>>>vec;
+		for (int i = 0; i < rows; i++) {
+			vec.push_back({ indexes[i],mat.row(i) });
+		}
+		if (ascending) {
+			sort(vec.begin(), vec.end(), [](pair<string, VectorX<T>>& v1, pair<string, VectorX<T>>& v2) {return v1.first < v2.first; });
+		}
+		else {
+			sort(vec.begin(), vec.end(), [](pair<string, VectorX<T>>& v1, pair<string, VectorX<T>>& v2) {return v1.first > v2.first; });
+		}
+		for (int i = 0; i < rows; i++) {
+			indexes[i] = vec[i].first;
+			mat.row(i) = vec[i].second;
+		}
+	}
+	else {
+		auto it = find(features.begin(), features.end(), feature);
+		int dist = distance(features.begin(), it);
+		vector<pair<string, VectorX<T>>>vec;
+		for (int i = 0; i < rows; i++) {
+			vec.push_back({ indexes[i],mat.row(i) });
+		}
+		if (ascending) {
+			sort(vec.begin(), vec.end(), [dist](pair<string, VectorX<T>>& v1, pair<string, VectorX<T>>& v2) {return v1.second[dist] < v2.second[dist]; });
+		}
+		else {
+			sort(vec.begin(), vec.end(), [dist](pair<string, VectorX<T>>& v1, pair<string, VectorX<T>>& v2) {return v1.second[dist] > v2.second[dist]; });
+		}
+		for (int i = 0; i < rows; i++) {
+			indexes[i] = vec[i].first;
+			mat.row(i) = vec[i].second;
 		}
 	}
 }
