@@ -8,6 +8,7 @@
 #include<vector>
 #include<algorithm>
 #include<unordered_map>
+#include<set>
 
 using namespace::std;
 using namespace Eigen;
@@ -35,7 +36,9 @@ public:
 	void addRows(vector<vector<string>>rows);
 	void addColumns(unordered_map<string, vector<string>>m);
 	void removeColumns(vector<string>fts);
+	void sortbyIndex(bool ascending);
 	void sortby(string feature,bool ascedning);
+	Data<T> groupby(string feature, string operate);
 	void print();
 	void to_csv(string path);
 private:

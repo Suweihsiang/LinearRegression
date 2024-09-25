@@ -360,22 +360,30 @@ void Data<T>::removeColumns(vector<string>fts) {
 }
 
 template<typename T>
+void Data<T>::sortbyIndex(bool ascending) {
+	if (!hasIndexRows) {
+		return;
+	}
+	vector<pair<string, VectorX<T>>>vec;
+	for (int i = 0; i < rows; i++) {
+		vec.push_back({ indexes[i],mat.row(i) });
+	}
+	if (ascending) {
+		sort(vec.begin(), vec.end(), [](pair<string, VectorX<T>>& v1, pair<string, VectorX<T>>& v2) {return v1.first < v2.first; });
+	}
+	else {
+		sort(vec.begin(), vec.end(), [](pair<string, VectorX<T>>& v1, pair<string, VectorX<T>>& v2) {return v1.first > v2.first; });
+	}
+	for (int i = 0; i < rows; i++) {
+		indexes[i] = vec[i].first;
+		mat.row(i) = vec[i].second;
+	}
+}
+
+template<typename T>
 void Data<T>::sortby(string feature,bool ascending) {
-	if (hasIndexRows && feature == index_name) {
-		vector<pair<string, VectorX<T>>>vec;
-		for (int i = 0; i < rows; i++) {
-			vec.push_back({ indexes[i],mat.row(i) });
-		}
-		if (ascending) {
-			sort(vec.begin(), vec.end(), [](pair<string, VectorX<T>>& v1, pair<string, VectorX<T>>& v2) {return v1.first < v2.first; });
-		}
-		else {
-			sort(vec.begin(), vec.end(), [](pair<string, VectorX<T>>& v1, pair<string, VectorX<T>>& v2) {return v1.first > v2.first; });
-		}
-		for (int i = 0; i < rows; i++) {
-			indexes[i] = vec[i].first;
-			mat.row(i) = vec[i].second;
-		}
+	if (feature == index_name) {
+		sortbyIndex(ascending);
 	}
 	else {
 		auto it = find(features.begin(), features.end(), feature);
@@ -395,6 +403,49 @@ void Data<T>::sortby(string feature,bool ascending) {
 			mat.row(i) = vec[i].second;
 		}
 	}
+}
+
+template<typename T>
+Data<T> Data<T>::groupby(string feature, string operate) {
+	setIndex(feature);
+	sortbyIndex(true);
+	set<string> idx_set(indexes.begin(), indexes.end());
+	MatrixX<T> mat_res(0, columns);
+	int pos = 0;
+	for (string idx : idx_set) {
+		RowVectorX<T> sum = RowVectorX<T>::Zero(columns);
+		int count = 0;
+		for (int i = pos; i < rows; i++) {
+			if (indexes[i] == idx) {
+				sum += mat.row(i);
+				count++;
+				pos++;
+			}
+			else {
+				break;
+			}
+		}
+		if (operate == "sum") { ; }
+		else if (operate == "mean") { sum /= count; }
+		mat_res.conservativeResize(mat_res.rows() + 1, columns);
+		mat_res.row(mat_res.rows()-1) = sum;
+	}
+	vector<string>idx_group(idx_set.begin(), idx_set.end());
+	vector<vector<string>>res_group;
+	for (int c = 0; c < columns; c++) {
+		vector<string>mat_to_str;
+		for (int r = 0;r < mat_res.rows(); r++) {
+			mat_to_str.push_back(to_string(mat_res(r, c)));
+		}
+		res_group.push_back(mat_to_str);
+	}
+	unordered_map<string, vector<string>>mav;
+	mav[index_name] = idx_group;
+	for (int i = 0; i < columns; i++) {
+		mav[features[i]] = res_group[i];
+	}
+	Data<T> df_group(mav, true);
+	return df_group;
 }
 
 template<typename T>
