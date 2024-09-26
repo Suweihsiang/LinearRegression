@@ -49,6 +49,7 @@ private:
 	string index_name;
 	vector<string>features;
 	vector<string>indexes;
+	vector<vector<int>>nullpos;
 	Matrix<T,Dynamic,Dynamic>mat;
 };
 

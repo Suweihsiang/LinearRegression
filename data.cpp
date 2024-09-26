@@ -15,6 +15,11 @@ Data<T>::Data(unordered_map<string, vector<string>>m, bool IndexFirst) :rows((m.
 			features.push_back(it->first);
 			for (int r = 0; r < rows; r++) {
 				string s_val = it->second[r];
+				if (s_val == "") {
+					nullpos.push_back({ r,c-1 });
+					c++;
+					continue;
+				}
 				istringstream iss(s_val);
 				T T_val;
 				iss >> T_val;
@@ -28,6 +33,11 @@ Data<T>::Data(unordered_map<string, vector<string>>m, bool IndexFirst) :rows((m.
 			features.push_back(it->first);
 			for (int r = 0; r < rows; r++) {
 				string s_val = it->second[r];
+				if (s_val == "") {
+					nullpos.push_back({ r,c });
+					c++;
+					continue;
+				}
 				istringstream iss(s_val);
 				T T_val;
 				iss >> T_val;
@@ -36,7 +46,7 @@ Data<T>::Data(unordered_map<string, vector<string>>m, bool IndexFirst) :rows((m.
 			it++;
 		}
 	}
-	sortby(index_name, true);
+	sortbyIndex(true);
 }
 
 template<typename T>
@@ -64,6 +74,11 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 				indexes.push_back(data.substr(0,data.find(',')));
 				vector<string>cols = camma_remove(data);
 				for (string col : cols) {
+					if (col == "") {
+						nullpos.push_back({ r,c });
+						c++;
+						continue;
+					}
 					istringstream iss(col);
 					T T_val;
 					iss >> T_val;
@@ -79,6 +94,11 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 				c++;
 				vector<string>cols = camma_remove(data);
 				for (string col : cols) {
+					if (col == "") {
+						nullpos.push_back({ r,c });
+						c++;
+						continue;
+					}
 					istringstream iss(col);
 					T T_val;
 					iss >> T_val;
@@ -93,6 +113,11 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 				indexes.push_back(cols[0]);
 				cols.erase(cols.begin());
 				for (string col : cols) {
+					if (col == "") {
+						nullpos.push_back({ r,c });
+						c++;
+						continue;
+					}
 					istringstream iss(col);
 					T T_val;
 					iss >> T_val;
@@ -102,6 +127,11 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 			}
 			else {
 				for (string col : cols) {
+					if (col == "") {
+						nullpos.push_back({ r,c });
+						c++;
+						continue;
+					}
 					istringstream iss(col);
 					T T_val;
 					iss >> T_val;
@@ -110,10 +140,14 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 				}
 			}
 		}
+		while (c < columns) {
+			nullpos.push_back({ r,c });
+			c++;
+		}
 		r++;
 		c = 0;
 	}
-	sortby(index_name, true);
+	sortbyIndex(true);
 	rows = mat.rows();
 }
 
@@ -393,10 +427,10 @@ void Data<T>::sortby(string feature,bool ascending) {
 			vec.push_back({ indexes[i],mat.row(i) });
 		}
 		if (ascending) {
-			sort(vec.begin(), vec.end(), [dist](pair<string, VectorX<T>>& v1, pair<string, VectorX<T>>& v2) {return v1.second[dist] < v2.second[dist]; });
+			sort(vec.begin(), vec.end(), [&dist](pair<string, VectorX<T>>& v1, pair<string, VectorX<T>>& v2) {return v1.second[dist] < v2.second[dist]; });
 		}
 		else {
-			sort(vec.begin(), vec.end(), [dist](pair<string, VectorX<T>>& v1, pair<string, VectorX<T>>& v2) {return v1.second[dist] > v2.second[dist]; });
+			sort(vec.begin(), vec.end(), [&dist](pair<string, VectorX<T>>& v1, pair<string, VectorX<T>>& v2) {return v1.second[dist] > v2.second[dist]; });
 		}
 		for (int i = 0; i < rows; i++) {
 			indexes[i] = vec[i].first;
