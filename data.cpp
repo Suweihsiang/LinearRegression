@@ -61,15 +61,14 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 			}
 			setMatrix(r, c, cols);
 		}
-		while (c < columns) {
-			nullpos.push_back({ r,c });
-			c++;
-		}
 		r++;
 		c = 0;
 	}
 	rows = mat.rows();
 	sortbyIndex(true);
+	for (auto i : nullpos) {
+		cout << i[0] << "\t" << i[1] << endl;
+	}
 }
 
 template<typename T>
@@ -129,6 +128,10 @@ void Data<T>::setMatrix(int r, int c, vector<string>cols) {
 		T T_val;
 		iss >> T_val;
 		mat(r, c) = T_val;
+		c++;
+	}
+	while (c < columns) {
+		nullpos.push_back({ r,c });
 		c++;
 	}
 }
