@@ -4,48 +4,16 @@ template<typename T>
 Data<T>::Data() {}
 
 template<typename T>
-Data<T>::Data(unordered_map<string, vector<string>>m, bool IndexFirst) :rows((m.begin()->second).size()), columns(m.size()), hasIndexRows(IndexFirst) {
+Data<T>::Data(unordered_map<string, vector<string>>m, bool IndexFirst) :rows((m.begin()->second).size()), hasIndexRows(IndexFirst) {
 	auto it = m.begin();
+	columns = hasIndexRows ? m.size() - 1 : m.size();
+	mat.conservativeResize(rows, columns);
 	if (hasIndexRows) {
 		index_name = it->first;
 		indexes = it->second;
-		mat.conservativeResize(rows, columns-1);
-		for (int c = 1; c < columns; c++) {
-			it++;
-			features.push_back(it->first);
-			for (int r = 0; r < rows; r++) {
-				string s_val = it->second[r];
-				if (s_val == "") {
-					nullpos.push_back({ r,c-1 });
-					c++;
-					continue;
-				}
-				istringstream iss(s_val);
-				T T_val;
-				iss >> T_val;
-				mat(r, c-1) = T_val;
-			}
-		}
+		it++;
 	}
-	else {
-		mat.conservativeResize(rows, columns);
-		for (int c = 0; c < columns; c++) {
-			features.push_back(it->first);
-			for (int r = 0; r < rows; r++) {
-				string s_val = it->second[r];
-				if (s_val == "") {
-					nullpos.push_back({ r,c });
-					c++;
-					continue;
-				}
-				istringstream iss(s_val);
-				T T_val;
-				iss >> T_val;
-				mat(r, c) = T_val;
-			}
-			it++;
-		}
-	}
+	setMatrix(it);
 	sortbyIndex(true);
 }
 
@@ -73,18 +41,7 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 			if (hasIndexRows) {
 				indexes.push_back(data.substr(0,data.find(',')));
 				vector<string>cols = camma_remove(data);
-				for (string col : cols) {
-					if (col == "") {
-						nullpos.push_back({ r,c });
-						c++;
-						continue;
-					}
-					istringstream iss(col);
-					T T_val;
-					iss >> T_val;
-					mat(r, c) = T_val;
-					c++;
-				}
+				setMatrix(r,c,cols);
 			}
 			else {
 				istringstream is(data.substr(0, data.find(',')));
@@ -93,18 +50,7 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 				mat(r, c) = T_date;
 				c++;
 				vector<string>cols = camma_remove(data);
-				for (string col : cols) {
-					if (col == "") {
-						nullpos.push_back({ r,c });
-						c++;
-						continue;
-					}
-					istringstream iss(col);
-					T T_val;
-					iss >> T_val;
-					mat(r, c) = T_val;
-					c++;
-				}
+				setMatrix(r, c, cols);
 			}
 		}
 		else {
@@ -112,33 +58,8 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 			if (hasIndexRows) {
 				indexes.push_back(cols[0]);
 				cols.erase(cols.begin());
-				for (string col : cols) {
-					if (col == "") {
-						nullpos.push_back({ r,c });
-						c++;
-						continue;
-					}
-					istringstream iss(col);
-					T T_val;
-					iss >> T_val;
-					mat(r, c) = T_val;
-					c++;
-				}
 			}
-			else {
-				for (string col : cols) {
-					if (col == "") {
-						nullpos.push_back({ r,c });
-						c++;
-						continue;
-					}
-					istringstream iss(col);
-					T T_val;
-					iss >> T_val;
-					mat(r, c) = T_val;
-					c++;
-				}
-			}
+			setMatrix(r, c, cols);
 		}
 		while (c < columns) {
 			nullpos.push_back({ r,c });
@@ -147,8 +68,8 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 		r++;
 		c = 0;
 	}
-	sortbyIndex(true);
 	rows = mat.rows();
+	sortbyIndex(true);
 }
 
 template<typename T>
@@ -174,6 +95,42 @@ Data<T> Data<T>::operator[](vector<string>fts) {
 	d_fts.rows = rows;
 	d_fts, columns = d_fts.mat.cols();
 	return d_fts;
+}
+
+template<typename T>
+void Data<T>::setMatrix(unordered_map<string, vector<string>>::iterator it) {
+	for (int c = 0; c < columns; c++) {
+		features.push_back(it->first);
+		for (int r = 0; r < rows; r++) {
+			string s_val = it->second[r];
+			if (s_val == "") {
+				nullpos.push_back({ r,c });
+				c++;
+				continue;
+			}
+			istringstream iss(s_val);
+			T T_val;
+			iss >> T_val;
+			mat(r, c) = T_val;
+		}
+		it++;
+	}
+}
+
+template<typename T>
+void Data<T>::setMatrix(int r, int c, vector<string>cols) {
+	for (string col : cols) {
+		if (col == "") {
+			nullpos.push_back({ r,c });
+			c++;
+			continue;
+		}
+		istringstream iss(col);
+		T T_val;
+		iss >> T_val;
+		mat(r, c) = T_val;
+		c++;
+	}
 }
 
 template<typename T>

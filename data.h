@@ -51,6 +51,8 @@ private:
 	vector<string>indexes;
 	vector<vector<int>>nullpos;
 	Matrix<T,Dynamic,Dynamic>mat;
+	void setMatrix(unordered_map<string, vector<string>>::iterator it);
+	void setMatrix(int r, int c, vector<string> cols);
 };
 
 #endif
