@@ -66,9 +66,6 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 	}
 	rows = mat.rows();
 	sortbyIndex(true);
-	for (auto i : nullpos) {
-		cout << i[0] << "\t" << i[1] << endl;
-	}
 }
 
 template<typename T>
