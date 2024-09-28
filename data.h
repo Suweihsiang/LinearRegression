@@ -30,7 +30,7 @@ public:
 	vector<string>getIndexs() const;
 	vector<string> camma_remove(string data_string);
 	void setIndex(string index);
-	void removeRow(int RowToRemove);
+	void removeRow(string idx);
 	void removeRows(vector<string>idxs);
 	void merge(Data df2);
 	void addRows(vector<vector<string>>rows);

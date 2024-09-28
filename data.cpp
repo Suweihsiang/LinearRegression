@@ -230,22 +230,21 @@ void Data<T>::setIndex(string index) {
 }
 
 template<typename T>
-void Data<T>::removeRow(int RowToRemove) {
-	mat.block(RowToRemove, 0, mat.rows() - RowToRemove-1, mat.cols()) = mat.block(RowToRemove + 1, 0, mat.rows() - RowToRemove-1, mat.cols());
-	mat.conservativeResize(mat.rows() - 1, mat.cols());
+void Data<T>::removeRow(string idx) {
+	auto it = find(indexes.begin(), indexes.end(), idx);
+	if (it != indexes.end()) {
+		auto next = indexes.erase(it);
+		int dist = distance(indexes.begin(), next);
+		mat.block(dist, 0, mat.rows() - dist - 1, mat.cols()) = mat.block(dist + 1, 0, mat.rows() - dist - 1, mat.cols());
+		mat.conservativeResize(mat.rows() - 1, mat.cols());
+		rows--;
+	}
 }
 
 template<typename T>
 void Data<T>::removeRows(vector<string>idxs) {
 	for (string idx : idxs) {
-		auto it = find(indexes.begin(), indexes.end(), idx);
-		if (it != indexes.end()) {
-			auto next = indexes.erase(it);
-			int dist = distance(indexes.begin(), next);
-			mat.block(dist, 0, mat.rows() - dist - 1, mat.cols()) = mat.block(dist + 1, 0, mat.rows() - dist - 1, mat.cols());
-			mat.conservativeResize(mat.rows() - 1, mat.cols());
-			rows--;
-		}
+		removeRow(idx);
 	}
 }
 
@@ -261,26 +260,17 @@ void Data<T>::merge(Data df2) {
 			features.push_back(feature + "_" + df2.data_name);
 		}
 	}
-	int remove_count = 0;
-	for (int i = 0; i < df2.getRows(); i++) {
-		if (find(indexes.begin(),indexes.end(),indexes2[i]) == indexes.end()) {
-			df2.removeRow(i-remove_count);
-			remove_count++;
+	for (string idx : df2.getIndexs()) {
+		if (find(indexes.begin(),indexes.end(),idx) == indexes.end()) {
+			df2.removeRow(idx);
 		}
 	}
-	remove_count = 0;
-	vector<int>rm_idx;
-	for (int i = 0; i < getRows(); i++) {
-		if (find(indexes2.begin(), indexes2.end(),indexes[i]) == indexes2.end()) {
-			removeRow(i-remove_count);
-			rm_idx.push_back(i-remove_count);
-			remove_count++;
+	int i = 0;
+	for (string idx : getIndexs()) {
+		if (find(indexes2.begin(), indexes2.end(),idx) == indexes2.end()) {
+			removeRow(idx);
 		}
 	}
-	for (int idx : rm_idx) {
-		auto it = indexes.erase(indexes.begin() + idx);
-	}
-	rows = indexes.size();
 	columns = features.size();
 	Matrix<T, Dynamic, Dynamic> mat2 = df2.getMatrix();
 	mat.conservativeResize(mat.rows(), mat.cols() + mat2.cols());
