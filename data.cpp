@@ -36,12 +36,11 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 	mat.conservativeResize(0, columns);
 	int r = 0, c = 0;
 	while (getline(ifs, data)) {
+		vector<string>cols;
 		mat.conservativeResize(mat.rows() + 1, columns);
 		if (isThousand) {
 			if (hasIndexRows) {
 				indexes.push_back(data.substr(0,data.find(',')));
-				vector<string>cols = camma_remove(data);
-				setMatrix(r,c,cols);
 			}
 			else {
 				istringstream is(data.substr(0, data.find(',')));
@@ -49,18 +48,17 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 				is >> T_date;
 				mat(r, c) = T_date;
 				c++;
-				vector<string>cols = camma_remove(data);
-				setMatrix(r, c, cols);
 			}
+			cols = camma_remove(data);
 		}
 		else {
-			vector<string> cols = split(data, ',');
+			cols = split(data, ',');
 			if (hasIndexRows) {
 				indexes.push_back(cols[0]);
 				cols.erase(cols.begin());
 			}
-			setMatrix(r, c, cols);
 		}
+		setMatrix(r, c, cols);
 		r++;
 		c = 0;
 	}
@@ -381,7 +379,7 @@ void Data<T>::sortby(string feature,bool ascending) {
 		int dist = distance(features.begin(), it);
 		vector<pair<string, VectorX<T>>>vec;
 		for (int i = 0; i < rows; i++) {
-			vec.push_back({ indexes[i],mat.row(i) });
+			hasIndexRows?vec.push_back({ indexes[i],mat.row(i) }): vec.push_back({ to_string(i+1),mat.row(i)});
 		}
 		if (ascending) {
 			sort(vec.begin(), vec.end(), [&dist](pair<string, VectorX<T>>& v1, pair<string, VectorX<T>>& v2) {return v1.second[dist] < v2.second[dist]; });
@@ -390,7 +388,7 @@ void Data<T>::sortby(string feature,bool ascending) {
 			sort(vec.begin(), vec.end(), [&dist](pair<string, VectorX<T>>& v1, pair<string, VectorX<T>>& v2) {return v1.second[dist] > v2.second[dist]; });
 		}
 		for (int i = 0; i < rows; i++) {
-			indexes[i] = vec[i].first;
+			if (hasIndexRows) { indexes[i] = vec[i].first; }
 			mat.row(i) = vec[i].second;
 		}
 	}
