@@ -30,15 +30,18 @@ public:
 	vector<string>getIndexs() const;
 	vector<string> camma_remove(string data_string);
 	void setIndex(string index);
+	void removeRow(int RowToRemove);
 	void removeRow(string idx);
 	void removeRows(vector<string>idxs);
 	void merge(Data df2);
 	void addRows(vector<vector<string>>rows);
 	void addColumns(unordered_map<string, vector<string>>m);
+	void removeColumn(int ColToRemove);
 	void removeColumns(vector<string>fts);
 	void sortbyIndex(bool ascending);
 	void sortby(string feature,bool ascedning);
 	Data<T> groupby(string feature, string operate);
+	void dropna(int axis);
 	void print();
 	void to_csv(string path);
 private:

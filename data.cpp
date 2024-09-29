@@ -76,7 +76,7 @@ Data<T> Data<T>::operator[](vector<string>fts) {
 		d_fts.indexes = indexes;
 	}
 	int c = 0;
-	for (string ft : fts) {
+	for (const auto &ft : fts) {
 		auto it = find(features.begin(), features.end(), ft);
 		if (it != features.end()) {
 			d_fts.mat.conservativeResize(rows, c + 1);
@@ -113,7 +113,7 @@ void Data<T>::setMatrix(unordered_map<string, vector<string>>::iterator it) {
 
 template<typename T>
 void Data<T>::setMatrix(int r, int c, vector<string>cols) {
-	for (string col : cols) {
+	for (const auto &col : cols) {
 		if (col == "") {
 			nullpos.push_back({ r,c });
 			c++;
@@ -213,7 +213,7 @@ void Data<T>::setIndex(string index) {
 			removeColumns({ index });
 			index_name = index;
 			indexes.clear();
-			for (T idx : new_indexes) {
+			for (const auto &idx : new_indexes) {
 				indexes.push_back(to_string((int)idx));
 			}
 		}
@@ -222,11 +222,19 @@ void Data<T>::setIndex(string index) {
 			vector<T> new_indexes(mat.col(dist).data(),mat.col(dist).data() + mat.rows());
 			removeColumns({ index });
 			index_name = index;
-			for (T idx : new_indexes) {
+			for (const auto &idx : new_indexes) {
 				indexes.push_back(to_string((int)idx));
 			}
 		}
 	}
+}
+
+template<typename T>
+void Data<T>::removeRow(int RowToRemove) {
+	indexes.erase(indexes.begin() + RowToRemove);
+	mat.block(RowToRemove, 0, rows - RowToRemove - 1, columns) = mat.block(RowToRemove + 1, 0, rows - RowToRemove - 1, columns);
+	mat.conservativeResize(rows - 1, columns);
+	rows--;
 }
 
 template<typename T>
@@ -243,7 +251,7 @@ void Data<T>::removeRow(string idx) {
 
 template<typename T>
 void Data<T>::removeRows(vector<string>idxs) {
-	for (string idx : idxs) {
+	for (const auto &idx : idxs) {
 		removeRow(idx);
 	}
 }
@@ -252,7 +260,7 @@ template<typename T>
 void Data<T>::merge(Data df2) {
 	vector<string> features2 = df2.getFeatures();
 	vector<string> indexes2 = df2.getIndexs();
-	for (string feature : features2) {
+	for (const auto &feature : features2) {
 		if (find(features.begin(),features.end(),feature) == features.end()) {
 			features.push_back(feature);
 		}
@@ -260,13 +268,12 @@ void Data<T>::merge(Data df2) {
 			features.push_back(feature + "_" + df2.data_name);
 		}
 	}
-	for (string idx : df2.getIndexs()) {
+	for (const auto &idx : df2.getIndexs()) {
 		if (find(indexes.begin(),indexes.end(),idx) == indexes.end()) {
 			df2.removeRow(idx);
 		}
 	}
-	int i = 0;
-	for (string idx : getIndexs()) {
+	for (const auto &idx : getIndexs()) {
 		if (find(indexes2.begin(), indexes2.end(),idx) == indexes2.end()) {
 			removeRow(idx);
 		}
@@ -325,8 +332,16 @@ void Data<T>::addColumns(unordered_map<string, vector<string>>ms) {
 }
 
 template<typename T>
+void Data<T>::removeColumn(int ColToRemove) {
+	features.erase(features.begin() + ColToRemove);
+	mat.block(0, ColToRemove, rows, columns - ColToRemove - 1) = mat.block(0, ColToRemove + 1, rows, columns - ColToRemove - 1);
+	mat.conservativeResize(rows, columns - 1);
+	columns--;
+}
+
+template<typename T>
 void Data<T>::removeColumns(vector<string>fts) {
-	for (string ft : fts) {
+	for (const auto &ft : fts) {
 		auto it = find(features.begin(), features.end(), ft);
 		if (it != features.end()) {
 			auto next = features.erase(it);
@@ -391,7 +406,7 @@ Data<T> Data<T>::groupby(string feature, string operate) {
 	set<string> idx_set(indexes.begin(), indexes.end());
 	MatrixX<T> mat_res(0, columns);
 	int pos = 0;
-	for (string idx : idx_set) {
+	for (const auto &idx : idx_set) {
 		RowVectorX<T> sum = RowVectorX<T>::Zero(columns);
 		int count = 0;
 		for (int i = pos; i < rows; i++) {
@@ -428,11 +443,26 @@ Data<T> Data<T>::groupby(string feature, string operate) {
 }
 
 template<typename T>
+void Data<T>::dropna(int axis) {
+	sort(nullpos.begin(), nullpos.end(), [&axis](vector<int>& v1, vector<int>& v2) {return v1[axis] < v2[axis]; });
+	int removeCount = 0;
+	int pre_remove = -1;
+	for (const auto &nan : nullpos) {
+		if (nan[axis] != pre_remove) {
+			(axis == 0) ? removeRow(nan[axis] - removeCount) : removeColumn(nan[axis] - removeCount);
+			removeCount++;
+			pre_remove = nan[axis];
+		}
+	}
+
+}
+
+template<typename T>
 void Data<T>::print() {
 	if (hasIndexRows) {
 		cout << index_name << "\t" << " ";
 	}
-	for (string feature : features) {
+	for (const auto &feature : features) {
 		cout << feature << "\t"<<" ";
 	}
 	cout << endl;
@@ -451,7 +481,7 @@ void Data<T>::to_csv(string path) {
 	if (hasIndexRows) {
 		dataFile << index_name << " ";
 	}
-	for (string feature : features) {
+	for (const auto &feature : features) {
 		dataFile << feature << " ";
 	}
 	dataFile << endl;
