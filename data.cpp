@@ -1,5 +1,10 @@
 #include"data.h"
+//先宣告類模板有哪些
+template Data<double>;
+template Data<float>;
+template Data<int>;
 
+//開始實作函式
 template<typename T>
 Data<T>::Data() {}
 
@@ -65,6 +70,9 @@ Data<T>::Data(string path,bool IndexFirst,bool isThousand) {
 	rows = mat.rows();
 	sortbyIndex(true);
 }
+
+template<typename T>
+Data<T>::~Data() {}
 
 template<typename T>
 Data<T> Data<T>::operator[](vector<string>fts) {

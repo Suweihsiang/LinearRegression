@@ -10,8 +10,25 @@
 #include<unordered_map>
 #include<set>
 
-using namespace::std;
-using namespace Eigen;
+using std::unordered_map;
+using std::vector;
+using std::string;
+using std::ifstream;
+using std::ofstream;
+using std::ios;
+using std::istringstream;
+using std::set;
+using std::pair;
+using std::cout;
+using std::endl;
+using std::to_string;
+
+
+using Eigen::Matrix;
+using Eigen::MatrixX;
+using Eigen::Dynamic;
+using Eigen::RowVectorX;
+using Eigen::VectorX;
 
 template<typename T>
 class Data {
@@ -19,6 +36,7 @@ public:
 	Data();
 	Data(unordered_map<string, vector<string>>m, bool IndexFirst);
 	Data(string path,bool IndexFirst,bool isThousand);
+	~Data();
 	Data<T> operator[](vector<string> fts);
 	vector<string> split(string s, char dec);
 	void setDataname(string _data_name);

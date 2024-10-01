@@ -1,9 +1,10 @@
-#include"data.cpp"//原撰寫#include"data.h"發生LNK2019錯誤，如何除錯請參考https://www.cnblogs.com/zwj-199306231519/p/12989829.html
+#include"data.h"
+#include"LinearRegression.h"
 #include<Python.h>
 #include"matplotlibcpp.h"
-#include<set>
+#include<cuda.h>
+#include<cuda_runtime.h>
 
-using namespace::std;
 namespace plt = matplotlibcpp;
 
 int main(int argc, char** argv) {
