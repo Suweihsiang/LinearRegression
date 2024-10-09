@@ -8,8 +8,8 @@
 
 using Eigen::MatrixXd;
 
-cudaError_t matmul(MatrixXd& a, MatrixXd& b, MatrixXd& c);
-cudaError_t matmul_shared(MatrixXd &a, MatrixXd &b,MatrixXd &c);
-cudaError_t matadd(MatrixXd &a, MatrixXd &b,MatrixXd &c);
+void matmul(MatrixXd& a, MatrixXd& b, MatrixXd& c);
+void matmul_shared(MatrixXd &a, MatrixXd &b,MatrixXd &c);
+void matadd(MatrixXd &a, MatrixXd &b,MatrixXd &c);
 
 #endif

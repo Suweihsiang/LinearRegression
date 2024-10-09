@@ -1,4 +1,14 @@
 #include"utils.cuh"
+#include<stdio.h>
+#include<stdlib.h>
+
+#define CHECK_CUDA_ERROR(val) Check_cuda_Error((val),__FILE__,__LINE__)
+void Check_cuda_Error(cudaError_t error, const char* const file, const int line) {
+	if (error != cudaSuccess) {
+		printf("CUDA Error Occurs at %s, line %d : #%d(%s)\n", file, line, error, cudaGetErrorString(error));
+		exit(EXIT_FAILURE);
+	}
+}
 
 __global__ void multi_matrix(double* as, double* bs, double* cs, int row, int col, int k) {
 	int r = threadIdx.y + blockDim.y * blockIdx.y;
@@ -12,29 +22,27 @@ __global__ void multi_matrix(double* as, double* bs, double* cs, int row, int co
 	}
 }
 
-cudaError_t matmul(MatrixXd& a, MatrixXd& b, MatrixXd& c) {
+void matmul(MatrixXd& a, MatrixXd& b, MatrixXd& c) {
 	double* as;
 	double* bs;
 	double* cs;
 	size_t a_sz = sizeof(double) * a.size();
 	size_t b_sz = sizeof(double) * b.size();
 	size_t c_sz = sizeof(double) * c.size();
-	cudaError_t cudaError;
-	cudaError = cudaMalloc(&as, a_sz);
-	cudaError = cudaMalloc(&bs, b_sz);
-	cudaError = cudaMalloc(&cs, c_sz);
-	cudaError = cudaMemcpy(as, a.data(), a_sz, cudaMemcpyHostToDevice);
-	cudaError = cudaMemcpy(bs, b.data(), b_sz, cudaMemcpyHostToDevice);
+	CHECK_CUDA_ERROR(cudaMalloc(&as, a_sz));
+	CHECK_CUDA_ERROR(cudaMalloc(&bs, b_sz));
+	CHECK_CUDA_ERROR(cudaMalloc(&cs, c_sz));
+	CHECK_CUDA_ERROR(cudaMemcpy(as, a.data(), a_sz, cudaMemcpyHostToDevice));
+	CHECK_CUDA_ERROR(cudaMemcpy(bs, b.data(), b_sz, cudaMemcpyHostToDevice));
 	dim3 threads_per_block(32, 32, 1);
 	dim3 blocks_per_grid((b.cols() + 32 - 1) / 32, (a.rows() + 32 - 1) / 32, 1);
 	multi_matrix << <blocks_per_grid, threads_per_block >> > (as, bs, cs, a.rows(), b.cols(), a.cols());
-	cudaError = cudaGetLastError();
-	cudaError = cudaDeviceSynchronize();
-	cudaError = cudaMemcpy(c.data(), cs, c_sz, cudaMemcpyDeviceToHost);
-	cudaError = cudaFree(as);
-	cudaError = cudaFree(bs);
-	cudaError = cudaFree(cs);
-	return cudaError;
+	CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+	CHECK_CUDA_ERROR(cudaMemcpy(c.data(), cs, c_sz, cudaMemcpyDeviceToHost));
+	CHECK_CUDA_ERROR(cudaFree(as));
+	CHECK_CUDA_ERROR(cudaFree(bs));
+	CHECK_CUDA_ERROR(cudaFree(cs));
+	return ;
 }
 
 __global__ void multi_matrix_shared(double* a,double* b, double* c, int row, int col, int k) {
@@ -106,29 +114,27 @@ __global__ void multi_matrix_shared(double* a,double* b, double* c, int row, int
 	}
 }
 
-cudaError_t matmul_shared(MatrixXd& a, MatrixXd& b, MatrixXd& c) {
+void matmul_shared(MatrixXd& a, MatrixXd& b, MatrixXd& c) {
 	double* aptr;
 	double* bptr;
 	double* cptr;
 	size_t a_size = sizeof(double) * a.size();
 	size_t b_size = sizeof(double) * b.size();
 	size_t c_size = sizeof(double) * c.size();
-	cudaError_t cudaError;
-	cudaError = cudaMalloc(&aptr, a_size);
-	cudaError = cudaMalloc(&bptr, b_size);
-	cudaError = cudaMalloc(&cptr, c_size);
-	cudaError = cudaMemcpy(aptr, a.data(), a_size, cudaMemcpyHostToDevice);
-	cudaError = cudaMemcpy(bptr, b.data(), b_size, cudaMemcpyHostToDevice);
+	CHECK_CUDA_ERROR(cudaMalloc(&aptr, a_size));
+	CHECK_CUDA_ERROR(cudaMalloc(&bptr, b_size));
+	CHECK_CUDA_ERROR(cudaMalloc(&cptr, c_size));
+	CHECK_CUDA_ERROR(cudaMemcpy(aptr, a.data(), a_size, cudaMemcpyHostToDevice));
+	CHECK_CUDA_ERROR(cudaMemcpy(bptr, b.data(), b_size, cudaMemcpyHostToDevice));
 	dim3 blocksdim(16, 16, 1);
 	dim3 gridsdim((b.cols() - 1) / 128 + 1, (a.rows() - 1) / 128 + 1, 1);
 	multi_matrix_shared << <gridsdim, blocksdim >> > (aptr, bptr, cptr, a.rows(), b.cols(), a.cols());
-	cudaError = cudaGetLastError();
-	cudaError = cudaDeviceSynchronize();
-	cudaError = cudaMemcpy(c.data(), cptr, c_size, cudaMemcpyDeviceToHost);
-	cudaError = cudaFree(aptr);
-	cudaError = cudaFree(bptr);
-	cudaError = cudaFree(cptr);
-	return cudaError;
+	CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+	CHECK_CUDA_ERROR(cudaMemcpy(c.data(), cptr, c_size, cudaMemcpyDeviceToHost));
+	CHECK_CUDA_ERROR(cudaFree(aptr));
+	CHECK_CUDA_ERROR(cudaFree(bptr));
+	CHECK_CUDA_ERROR(cudaFree(cptr));
+	return ;
 }
 
 __global__ void add_matrix(double* a, double* b, double* c, int row, int col) {
@@ -139,25 +145,23 @@ __global__ void add_matrix(double* a, double* b, double* c, int row, int col) {
 	}
 }
 
-cudaError_t matadd(MatrixXd& a, MatrixXd& b, MatrixXd& c) {
+void matadd(MatrixXd& a, MatrixXd& b, MatrixXd& c) {
 	double* aptr;
 	double* bptr;
 	double* cptr;
 	size_t a_size = sizeof(double) * a.size();
-	cudaError_t cudaError;
-	cudaError = cudaMalloc(&aptr, a_size);
-	cudaError = cudaMalloc(&bptr, a_size);
-	cudaError = cudaMalloc(&cptr, a_size);
-	cudaError = cudaMemcpy(aptr, a.data(), a_size, cudaMemcpyHostToDevice);
-	cudaError = cudaMemcpy(bptr, b.data(), a_size, cudaMemcpyHostToDevice);
+	CHECK_CUDA_ERROR(cudaMalloc(&aptr, a_size));
+	CHECK_CUDA_ERROR(cudaMalloc(&bptr, a_size));
+	CHECK_CUDA_ERROR(cudaMalloc(&cptr, a_size));
+	CHECK_CUDA_ERROR(cudaMemcpy(aptr, a.data(), a_size, cudaMemcpyHostToDevice));
+	CHECK_CUDA_ERROR(cudaMemcpy(bptr, b.data(), a_size, cudaMemcpyHostToDevice));
 	dim3 blockdim(32, 32, 1);
 	dim3 griddim((a.cols() - 1) / 32 + 1, (a.rows() - 1) / 32 + 1, 1);
 	add_matrix << <griddim, blockdim >> > (aptr, bptr, cptr, a.rows(), a.cols());
-	cudaError = cudaGetLastError();
-	cudaError = cudaDeviceSynchronize();
-	cudaError = cudaMemcpy(c.data(), cptr, a_size, cudaMemcpyDeviceToHost);
-	cudaError = cudaFree(aptr);
-	cudaError = cudaFree(bptr);
-	cudaError = cudaFree(cptr);
-	return cudaError;
+	CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+	CHECK_CUDA_ERROR(cudaMemcpy(c.data(), cptr, a_size, cudaMemcpyDeviceToHost));
+	CHECK_CUDA_ERROR(cudaFree(aptr));
+	CHECK_CUDA_ERROR(cudaFree(bptr));
+	CHECK_CUDA_ERROR(cudaFree(cptr));
+	return ;
 }
