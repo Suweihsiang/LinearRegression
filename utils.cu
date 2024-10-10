@@ -2,6 +2,9 @@
 #include<stdio.h>
 #include<stdlib.h>
 
+template void matmul<MatrixXd>(MatrixXd& a, MatrixXd& b, MatrixXd& c);
+template void matmul<VectorXd>(MatrixXd& a, VectorXd& b, VectorXd& c);
+
 #define CHECK_CUDA_ERROR(val) Check_cuda_Error((val),__FILE__,__LINE__)
 void Check_cuda_Error(cudaError_t error, const char* const file, const int line) {
 	if (error != cudaSuccess) {
@@ -22,7 +25,8 @@ __global__ void multi_matrix(double* as, double* bs, double* cs, int row, int co
 	}
 }
 
-void matmul(MatrixXd& a, MatrixXd& b, MatrixXd& c) {
+template<typename T>
+void matmul(MatrixXd& a, T& b, T& c) {
 	double* as;
 	double* bs;
 	double* cs;
@@ -42,16 +46,16 @@ void matmul(MatrixXd& a, MatrixXd& b, MatrixXd& c) {
 	CHECK_CUDA_ERROR(cudaFree(as));
 	CHECK_CUDA_ERROR(cudaFree(bs));
 	CHECK_CUDA_ERROR(cudaFree(cs));
-	return ;
+	return;
 }
 
-__global__ void multi_matrix_shared(double* a,double* b, double* c, int row, int col, int k) {
+__global__ void multi_matrix_shared(double* a, double* b, double* c, int row, int col, int k) {
 	const int BM = 128;
 	const int BN = 128;
 	const int BK = 8;
 	const int TM = 8;
 	const int TN = 8;
-	
+
 	__shared__ double a_shared[BM][BK];
 	__shared__ double b_shared[BK][BN];
 	double sub_c[TM][TN] = { 0.0 };
@@ -78,11 +82,11 @@ __global__ void multi_matrix_shared(double* a,double* b, double* c, int row, int
 		int b_global_row = bk * BK + b_shared_row;
 		int b_global_site = b_global_row + b_global_col * k;
 		for (int i = 0; i < 4; i++) {
-			a_shared[a_shared_row][a_shared_col + i] = (a_global_row < row && a_global_col < k) ? a[a_global_site + i * row] : 0;
-			b_shared[b_shared_row][b_shared_col + i] = (b_global_row < k && b_global_col < col) ? b[b_global_site + i * k] : 0;
+			a_shared[a_shared_row][a_shared_col + i] = (a_global_row < row&& a_global_col < k) ? a[a_global_site + i * row] : 0;
+			b_shared[b_shared_row][b_shared_col + i] = (b_global_row < k&& b_global_col < col) ? b[b_global_site + i * k] : 0;
 		}
 		__syncthreads();
-		
+
 		#pragma unroll
 		for (int j = 0; j < BK; j++) {
 			#pragma unroll
@@ -134,7 +138,61 @@ void matmul_shared(MatrixXd& a, MatrixXd& b, MatrixXd& c) {
 	CHECK_CUDA_ERROR(cudaFree(aptr));
 	CHECK_CUDA_ERROR(cudaFree(bptr));
 	CHECK_CUDA_ERROR(cudaFree(cptr));
-	return ;
+	return;
+}
+
+__global__ void multi_matvec_shared(double* a, double* b, double* c, int row, int k) {
+
+	const int BK = 1024;
+	const int TM = 1024;
+
+	__shared__ double b_shared[BK];
+	double sub_c[TM] = { 0.0 };
+
+	const int by = blockIdx.y;
+	const int ty = threadIdx.y;
+
+	int a_global_row = by * blockDim.y + ty;
+
+	for (int bk = 0; bk < (k - 1) / BK + 1; bk++) {
+		for (int i = 0; i < BK; i++) {
+			b_shared[i] = (bk * BK + i < k) ? b[bk * BK + i] : 0;
+		}
+		__syncthreads();
+		#pragma unroll
+		for (int j = 0; j < BK; j++) {
+			if (a_global_row >= row || j + bk * BK >= k) { break; }
+			sub_c[ty] += a[a_global_row + row * (j + bk * BK)] * b_shared[j];
+		}
+		__syncthreads();
+	}
+	int c_global_row = by * blockDim.y + ty;
+	if (c_global_row < row){
+		c[c_global_row] = sub_c[ty];
+	}
+}
+
+void matvecmul_shared(MatrixXd& a, VectorXd& b, VectorXd& c) {
+	double* aptr;
+	double* bptr;
+	double* cptr;
+	size_t a_size = sizeof(double) * a.size();
+	size_t b_size = sizeof(double) * b.size();
+	size_t c_size = sizeof(double) * c.size();
+	CHECK_CUDA_ERROR(cudaMalloc(&aptr, a_size));
+	CHECK_CUDA_ERROR(cudaMalloc(&bptr, b_size));
+	CHECK_CUDA_ERROR(cudaMalloc(&cptr, c_size));
+	CHECK_CUDA_ERROR(cudaMemcpy(aptr, a.data(), a_size, cudaMemcpyHostToDevice));
+	CHECK_CUDA_ERROR(cudaMemcpy(bptr, b.data(), b_size, cudaMemcpyHostToDevice));
+	dim3 blocksdim(1, 1024, 1);
+	dim3 gridsdim(1, (a.rows() - 1) / 1024 + 1, 1);
+	multi_matvec_shared << <gridsdim, blocksdim >> > (aptr, bptr, cptr, a.rows(), a.cols());
+	CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+	CHECK_CUDA_ERROR(cudaMemcpy(c.data(), cptr, c_size, cudaMemcpyDeviceToHost));
+	CHECK_CUDA_ERROR(cudaFree(aptr));
+	CHECK_CUDA_ERROR(cudaFree(bptr));
+	CHECK_CUDA_ERROR(cudaFree(cptr));
+	return;
 }
 
 __global__ void add_matrix(double* a, double* b, double* c, int row, int col) {
@@ -163,5 +221,5 @@ void matadd(MatrixXd& a, MatrixXd& b, MatrixXd& c) {
 	CHECK_CUDA_ERROR(cudaFree(aptr));
 	CHECK_CUDA_ERROR(cudaFree(bptr));
 	CHECK_CUDA_ERROR(cudaFree(cptr));
-	return ;
+	return;
 }

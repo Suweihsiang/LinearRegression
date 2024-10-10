@@ -7,9 +7,12 @@
 #include"device_launch_parameters.h"
 
 using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
-void matmul(MatrixXd& a, MatrixXd& b, MatrixXd& c);
+template<typename T>
+void matmul(MatrixXd& a, T& b, T& c);
 void matmul_shared(MatrixXd &a, MatrixXd &b,MatrixXd &c);
+void matvecmul_shared(MatrixXd& a, VectorXd& b, VectorXd& c);
 void matadd(MatrixXd &a, MatrixXd &b,MatrixXd &c);
 
 #endif
