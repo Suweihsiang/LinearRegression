@@ -49,7 +49,7 @@ void matmul(MatrixXd& a, T& b, T& c) {
 	return;
 }
 
-__global__ void multi_matrix_shared(double* a, double* b, double* c, int row, int col, int k) {
+__global__ void multi_matrix_shared(double* a,double* b, double* c, int row, int col, int k) {
 	const int BM = 128;
 	const int BN = 128;
 	const int BK = 8;
@@ -82,8 +82,8 @@ __global__ void multi_matrix_shared(double* a, double* b, double* c, int row, in
 		int b_global_row = bk * BK + b_shared_row;
 		int b_global_site = b_global_row + b_global_col * k;
 		for (int i = 0; i < 4; i++) {
-			a_shared[a_shared_row][a_shared_col + i] = (a_global_row < row&& a_global_col < k) ? a[a_global_site + i * row] : 0;
-			b_shared[b_shared_row][b_shared_col + i] = (b_global_row < k&& b_global_col < col) ? b[b_global_site + i * k] : 0;
+			a_shared[a_shared_row][a_shared_col + i] = (a_global_row < row && a_global_col < k) ? a[a_global_site + i * row] : 0;
+			b_shared[b_shared_row][b_shared_col + i] = (b_global_row < k && b_global_col < col) ? b[b_global_site + i * k] : 0;
 		}
 		__syncthreads();
 
@@ -141,34 +141,43 @@ void matmul_shared(MatrixXd& a, MatrixXd& b, MatrixXd& c) {
 	return;
 }
 
+
 __global__ void multi_matvec_shared(double* a, double* b, double* c, int row, int k) {
 
-	const int BK = 1024;
-	const int TM = 1024;
+	const int BK = 512;
+	const int TM = 128;
 
 	__shared__ double b_shared[BK];
 	double sub_c[TM] = { 0.0 };
 
+	const int bx = blockIdx.x;
 	const int by = blockIdx.y;
+	const int tx = threadIdx.x;
 	const int ty = threadIdx.y;
 
-	int a_global_row = by * blockDim.y + ty;
+	int a_global_row = 8 * by * blockDim.y + 8 * ty;
 
 	for (int bk = 0; bk < (k - 1) / BK + 1; bk++) {
-		for (int i = 0; i < BK; i++) {
-			b_shared[i] = (bk * BK + i < k) ? b[bk * BK + i] : 0;
+		for (int i = 0; i < 8; i++) {
+			b_shared[8 * tx + i] = (bk * BK + 8 * tx + i < k) ? b[bk * BK + 8 * tx + i] : 0;
 		}
 		__syncthreads();
 		#pragma unroll
 		for (int j = 0; j < BK; j++) {
-			if (a_global_row >= row || j + bk * BK >= k) { break; }
-			sub_c[ty] += a[a_global_row + row * (j + bk * BK)] * b_shared[j];
+			if (j + bk * BK >= k) { break; }
+			#pragma unroll
+			for (int i = 0; i < 8; i++) {
+				if (a_global_row + i >= row) { break; }
+				sub_c[8 * ty + i] += a[a_global_row + i + row * (j + bk * BK)] * b_shared[j];
+			}
 		}
 		__syncthreads();
 	}
-	int c_global_row = by * blockDim.y + ty;
-	if (c_global_row < row){
-		c[c_global_row] = sub_c[ty];
+	int c_global_row = 8 * by * blockDim.y + 8 * ty;
+	#pragma unroll
+	for (int i = 0; i < 8; i++) {
+		if (c_global_row + i >= row) { break; }
+		c[c_global_row + i] = sub_c[8 * ty + i];
 	}
 }
 
@@ -184,8 +193,8 @@ void matvecmul_shared(MatrixXd& a, VectorXd& b, VectorXd& c) {
 	CHECK_CUDA_ERROR(cudaMalloc(&cptr, c_size));
 	CHECK_CUDA_ERROR(cudaMemcpy(aptr, a.data(), a_size, cudaMemcpyHostToDevice));
 	CHECK_CUDA_ERROR(cudaMemcpy(bptr, b.data(), b_size, cudaMemcpyHostToDevice));
-	dim3 blocksdim(1, 1024, 1);
-	dim3 gridsdim(1, (a.rows() - 1) / 1024 + 1, 1);
+	dim3 blocksdim(64, 16, 1);
+	dim3 gridsdim((a.cols() - 1) / 512 + 1, (a.rows() - 1) / 128 + 1, 1);
 	multi_matvec_shared << <gridsdim, blocksdim >> > (aptr, bptr, cptr, a.rows(), a.cols());
 	CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 	CHECK_CUDA_ERROR(cudaMemcpy(c.data(), cptr, c_size, cudaMemcpyDeviceToHost));
