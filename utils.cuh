@@ -11,7 +11,8 @@ using Eigen::VectorXd;
 
 template<typename T>
 void matmul(MatrixXd& a, T& b, T& c);
-void matmul_shared(MatrixXd &a, MatrixXd &b,MatrixXd &c);
+template<typename T>
+void matmul_shared(MatrixXd &a, T &b,T &c);
 void matvecmul_shared(MatrixXd& a, VectorXd& b, VectorXd& c);
 void matadd(MatrixXd &a, MatrixXd &b,MatrixXd &c);
 

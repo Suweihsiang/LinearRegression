@@ -4,6 +4,8 @@
 
 template void matmul<MatrixXd>(MatrixXd& a, MatrixXd& b, MatrixXd& c);
 template void matmul<VectorXd>(MatrixXd& a, VectorXd& b, VectorXd& c);
+template void matmul_shared<MatrixXd>(MatrixXd& a, MatrixXd& b, MatrixXd& c);
+template void matmul_shared<VectorXd>(MatrixXd& a, VectorXd& b, VectorXd& c);
 
 #define CHECK_CUDA_ERROR(val) Check_cuda_Error((val),__FILE__,__LINE__)
 void Check_cuda_Error(cudaError_t error, const char* const file, const int line) {
@@ -118,7 +120,8 @@ __global__ void multi_matrix_shared(double* a,double* b, double* c, int row, int
 	}
 }
 
-void matmul_shared(MatrixXd& a, MatrixXd& b, MatrixXd& c) {
+template<typename T>
+void matmul_shared(MatrixXd& a, T& b, T& c) {
 	double* aptr;
 	double* bptr;
 	double* cptr;
