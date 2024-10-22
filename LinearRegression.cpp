@@ -3,17 +3,35 @@
 //開始實作函式
 LinearRegression::LinearRegression() {}
 
-LinearRegression::LinearRegression(int _iter, double _lr, double _error) :iters(_iter), lr(_lr), error(_error) {}
-
 LinearRegression::~LinearRegression() {}
 
-void LinearRegression::fit(MatrixXd& x, VectorXd& y, bool CUDA_use,bool fit_intercept) {
+void LinearRegression::set_params(unordered_map<string,double> params) {
+	if (params.find("iters") != params.end()) {
+		iters = params["iters"];
+	}
+	if (params.find("lr") != params.end()) {
+		lr = params["lr"];
+	}
+	if (params.find("error") != params.end()) {
+		error = params["error"];
+	}
+}
+
+void LinearRegression::get_params() {
+	cout << "iterations = " << iters << ", learning rate = " << lr << ", error = " << error << endl;
+}
+
+void LinearRegression::fit_gd(MatrixXd& x, VectorXd& y, bool CUDA_use,bool fit_intercept) {
 	if (fit_intercept) {
 		VectorXd intercept_ = VectorXd::Ones(x.rows());
 		x.conservativeResize(x.rows(), x.cols() + 1);
 		x.block(0, x.cols() - 1, x.rows(), 1) = intercept_;
 	}
-	coef = VectorXd::Random(x.cols());
+	random_device rd;
+	mt19937 gen(rd());
+	uniform_real_distribution<double> dis(-1.0, 1.0);
+	coef = VectorXd::NullaryExpr(x.cols(), [&]() {return dis(gen); });
+	cout << coef.transpose() << endl;
 	VectorXd y_pred(x.rows());
 	VectorXd errors(x.rows());
 	VectorXd delta(x.cols());
@@ -42,10 +60,32 @@ void LinearRegression::fit(MatrixXd& x, VectorXd& y, bool CUDA_use,bool fit_inte
 	}
 }
 
+
+void LinearRegression::fit_closed_form(MatrixXd& x, VectorXd& y, bool CUDA_use, bool fit_intercept) {
+	if (fit_intercept) {
+		VectorXd intercept_ = VectorXd::Ones(x.rows());
+		x.conservativeResize(x.rows(), x.cols() + 1);
+		x.block(0, x.cols() - 1, x.rows(), 1) = intercept_;
+	}
+	if (CUDA_use) {
+		MatrixXd x_T = x.transpose();
+		MatrixXd x_T_x(x.cols(),x.cols());
+		VectorXd x_T_y(y.rows());
+		coef = VectorXd(x.cols());
+		matmul_shared(x_T, x, x_T_x);
+		MatrixXd x_T_x_inv = x_T_x.inverse();
+		matmul_shared(x_T, y, x_T_y);
+		matmul_shared(x_T_x_inv, x_T_y, coef);
+	}
+	else {
+		coef = (x.transpose() * x).inverse() * x.transpose() * y;
+	}
+}
+
 VectorXd LinearRegression::predict(MatrixXd& x, VectorXd& coef, bool CUDA_use) {
 	VectorXd y_pred(x.rows());
 	if (CUDA_use) {
-		matvecmul_shared(x, coef, y_pred);
+		matmul_shared(x, coef, y_pred);
 	}
 	else {
 		y_pred = x * coef;
@@ -56,9 +96,11 @@ VectorXd LinearRegression::predict(MatrixXd& x, VectorXd& coef, bool CUDA_use) {
 double LinearRegression::score(MatrixXd& x, VectorXd& y) {
 	VectorXd y_pred = x * coef;
 	VectorXd y_err = y_pred - y;
+	VectorXd y_mean = VectorXd::Ones(y.rows()) * y.mean();
 	double u = y_err.dot(y_err);
-	double v = y.dot(y);
-	return (1 - u / v);
+	double v = (y - y_mean).dot(y - y_mean);
+	r_2 = (1 - u / v);
+	return r_2;
 }
 
 VectorXd LinearRegression::getCoef() const { return coef; }
