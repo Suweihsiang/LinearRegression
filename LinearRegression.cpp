@@ -44,7 +44,7 @@ void LinearRegression::fit_gd(MatrixXd& x, VectorXd& y, bool CUDA_use,bool fit_i
 			errors = y - y_pred;
 			MatrixXd xT = x.transpose();
 			matvecmul_shared(xT, errors, delta);
-			coef = coef + lr * delta;
+			coef = coef - 2 * lr * delta / x.rows();
 			VectorXd err_hist(1);
 			MatrixXd errT = errors.transpose();
 			matvecmul_shared(errT, errors, err_hist);
@@ -53,8 +53,8 @@ void LinearRegression::fit_gd(MatrixXd& x, VectorXd& y, bool CUDA_use,bool fit_i
 		else {
 			y_pred = x * coef;
 			errors = y - y_pred;
-			delta = x.transpose() * errors;
-			coef = coef + lr * delta;
+			delta = -2 * x.transpose() * errors / x.rows();
+			coef = coef - lr * delta;
 			history.push_back((errors.dot(errors)) / 2);
 		}
 	}
@@ -68,14 +68,14 @@ void LinearRegression::fit_closed_form(MatrixXd& x, VectorXd& y, bool CUDA_use, 
 		x.block(0, x.cols() - 1, x.rows(), 1) = intercept_;
 	}
 	if (CUDA_use) {
-		MatrixXd x_T = x.transpose();
-		MatrixXd x_T_x(x.cols(),x.cols());
-		VectorXd x_T_y(y.rows());
+		MatrixXd xT = x.transpose();
+		MatrixXd xTx(x.cols(),x.cols());
+		VectorXd xTy(y.rows());
 		coef = VectorXd(x.cols());
-		matmul_shared(x_T, x, x_T_x);
-		MatrixXd x_T_x_inv = x_T_x.inverse();
-		matmul_shared(x_T, y, x_T_y);
-		matmul_shared(x_T_x_inv, x_T_y, coef);
+		matmul_shared(xT, x, xTx);
+		MatrixXd xTx_inv = xTx.inverse();
+		matmul_shared(xT, y, xTy);
+		matmul_shared(xTx_inv, xTy, coef);
 	}
 	else {
 		coef = (x.transpose() * x).inverse() * x.transpose() * y;

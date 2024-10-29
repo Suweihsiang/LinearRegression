@@ -20,6 +20,7 @@ using std::uniform_real_distribution;
 using Eigen::VectorXd; 
 using Eigen::MatrixXd;
 using Eigen::Dynamic;
+using Eigen::ArrayXd;
 
 class LinearRegression {
 public:
@@ -33,7 +34,7 @@ public:
 	VectorXd getCoef() const;
 	double score(MatrixXd& x, VectorXd& y);
 	vector<double> gethistory() const;
-private:
+protected:
 	int iters = 1000;
 	double lr = 0.01;
 	double error = 0;
@@ -41,5 +42,4 @@ private:
 	VectorXd coef;
 	vector<double>history;
 };
-
 #endif
