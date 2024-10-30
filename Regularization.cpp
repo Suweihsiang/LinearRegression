@@ -77,6 +77,24 @@ double Lasso::score(MatrixXd& x, VectorXd& y) {
 	return r_2;
 }
 
+double Lasso::calc_AIC(MatrixXd& x, VectorXd& y) {
+	double n = x.cols();
+	double m = x.rows();
+	VectorXd y_pred = predict(x,coef);
+	double mse = (y - y_pred).transpose() * ((y - y_pred)/y.rows());
+	AIC = 2 * n + m * log(2 * M_PI) + m + m * log(mse);
+	return AIC;
+}
+
+double Lasso::calc_BIC(MatrixXd& x, VectorXd& y) {
+	double m = x.rows();
+	double n = x.cols();
+	VectorXd y_pred = predict(x, coef);
+	double mse = (y - y_pred).transpose() * ((y - y_pred) / y.rows());
+	BIC = log(m) * n + m * log(2 * M_PI) + m + m * log(mse);
+	return BIC;
+}
+
 VectorXd Lasso::getCoef() const { return coef; }
 
 vector<double> Lasso::gethistory() const { return history; }

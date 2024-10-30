@@ -70,8 +70,10 @@ int main(int argc, char** argv) {
         VectorXd y = mar.block(0, 6, mar.rows(), 1);
         reg.fit(x, y);
         VectorXd coef = reg.getCoef();
-        cout << reg.score(x, y) << endl;
-        cout << coef.transpose() << endl;
+        cout << "R2 = " << reg.score(x, y) << endl;
+        cout << "AIC = " << reg.calc_AIC(x, y) << endl;
+        cout << "BIC = " << reg.calc_BIC(x, y) << endl;
+        cout << "coef = " << coef.transpose() << endl;
         log_as.push_back(log10(a));
         w1.push_back(coef(0));
         w2.push_back(coef(1));

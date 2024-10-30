@@ -1,12 +1,16 @@
 #ifndef REGULARIZATION_H
 #define REGULARIZATION_H
 
+#define _USE_MATH_DEFINES
+
 #include <iostream>
 #include<eigen3/Eigen/Dense>
+#include<eigen3/unsupported/Eigen/matrixfunctions>
 #include<vector>
 #include<random>
 #include<unordered_map>
 #include<string>
+#include<cmath>
 
 using std::vector;
 using std::unordered_map;
@@ -22,7 +26,6 @@ using Eigen::MatrixXd;
 using Eigen::Dynamic;
 using Eigen::ArrayXd;
 
-
 class Lasso {
 public:
 	Lasso();
@@ -33,10 +36,14 @@ public:
 	VectorXd predict(MatrixXd& x, VectorXd& coef);
 	VectorXd getCoef() const;
 	double score(MatrixXd& x, VectorXd& y);
+	double calc_AIC(MatrixXd& x, VectorXd& y);
+	double calc_BIC(MatrixXd& x, VectorXd& y);
 	vector<double> gethistory() const;
 protected:
 	double alpha = 100;
 	double r_2;
+	double AIC;
+	double BIC;
 	VectorXd coef;
 	vector<double>history;
 private:
