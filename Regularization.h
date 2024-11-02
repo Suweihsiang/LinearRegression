@@ -17,6 +17,7 @@ using std::unordered_map;
 using std::string;
 using std::cout;
 using std::endl;
+using std::sqrt;
 using std::random_device;
 using std::mt19937;
 using std::uniform_real_distribution;
@@ -36,16 +37,16 @@ public:
 	VectorXd predict(MatrixXd& x, VectorXd& coef);
 	VectorXd getCoef() const;
 	double score(MatrixXd& x, VectorXd& y);
-	double calc_AIC(MatrixXd& x, VectorXd& y);
-	double calc_BIC(MatrixXd& x, VectorXd& y);
+	double calc_IC(MatrixXd& x, VectorXd& y,string criterion = "aic");
 	vector<double> gethistory() const;
 protected:
 	double alpha = 100;
 	double r_2;
-	double AIC;
-	double BIC;
+	double IC;
 	VectorXd coef;
 	vector<double>history;
+	double calc_noise_var(MatrixXd& x, VectorXd& y);
+	double get_degree_of_freedom(VectorXd& coef);
 private:
 	int iters = 1000;
 	double error = 0;

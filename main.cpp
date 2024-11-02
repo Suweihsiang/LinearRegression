@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
     Lasso reg;
     //Ridge reg;
     vector<double>as = { 0,1,5,10,50,100,500,1000,5000,10000,50000,100000,500000,1000000,5000000,10000000,50000000,100000000 };
-    vector<double>log_as, w1, w2, w3, w4;
+    vector<double>log_as, w1, w2, w3, w4,aic_v,bic_v;
     for (double a : as) {
         cout << "----------------------------------------" << endl;
         reg.set_params({ {"iters",10000},{"error",0.01},{"alpha",a} });
@@ -70,23 +70,33 @@ int main(int argc, char** argv) {
         VectorXd y = mar.block(0, 6, mar.rows(), 1);
         reg.fit(x, y);
         VectorXd coef = reg.getCoef();
+        double aic = reg.calc_IC(x, y);
+        double bic = reg.calc_IC(x, y,"bic");
         cout << "R2 = " << reg.score(x, y) << endl;
-        cout << "AIC = " << reg.calc_AIC(x, y) << endl;
-        cout << "BIC = " << reg.calc_BIC(x, y) << endl;
+        cout << "AIC = " << aic << endl;
+        cout << "BIC = " << bic << endl;
         cout << "coef = " << coef.transpose() << endl;
         log_as.push_back(log10(a));
         w1.push_back(coef(0));
         w2.push_back(coef(1));
         w3.push_back(coef(2));
         w4.push_back(coef(3));
+        aic_v.push_back(aic);
+        bic_v.push_back(bic);
     }
-    plt::plot(log_as, w1);
+    /*plt::plot(log_as, w1);
     plt::plot(log_as, w2);
     plt::plot(log_as, w3);
     plt::plot(log_as, w4);
     plt::xlabel("log alpha");
     plt::ylabel("weight");
-    plt::title("weight vs log(alpha)");
+    plt::title("weight vs log(alpha)");*/
+    plt::plot(log_as, aic_v,{{"label", "AIC"}});
+    plt::plot(log_as, bic_v, { {"label", "BIC"} });
+    plt::xlabel("log alpha");
+    plt::ylabel("criterion");
+    plt::legend();
+    plt::title("criterion vs log(alpha)");
     plt::show();
 
     return 0;

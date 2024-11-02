@@ -1,4 +1,5 @@
 #include "Regularization.h"
+#include"LinearRegression.h"
 
 //Lasso實作
 Lasso::Lasso() {}
@@ -77,27 +78,40 @@ double Lasso::score(MatrixXd& x, VectorXd& y) {
 	return r_2;
 }
 
-double Lasso::calc_AIC(MatrixXd& x, VectorXd& y) {
+double Lasso::calc_IC(MatrixXd& x, VectorXd& y, string criterion) {
 	double n = x.cols();
 	double m = x.rows();
-	VectorXd y_pred = predict(x,coef);
-	double mse = (y - y_pred).transpose() * ((y - y_pred)/y.rows());
-	AIC = 2 * n + m * log(2 * M_PI) + m + m * log(mse);
-	return AIC;
-}
-
-double Lasso::calc_BIC(MatrixXd& x, VectorXd& y) {
-	double m = x.rows();
-	double n = x.cols();
 	VectorXd y_pred = predict(x, coef);
-	double mse = (y - y_pred).transpose() * ((y - y_pred) / y.rows());
-	BIC = log(m) * n + m * log(2 * M_PI) + m + m * log(mse);
-	return BIC;
+	double d = get_degree_of_freedom(coef);
+	double noise_var = calc_noise_var(x, y);
+	double sse = (y - y_pred).transpose() * (y - y_pred); 
+	double factor = (criterion == "aic") ? 2 : log(m);
+	IC = factor * d + m * log(2 * M_PI * noise_var) + sse / noise_var;
+	return IC;
 }
 
 VectorXd Lasso::getCoef() const { return coef; }
 
 vector<double> Lasso::gethistory() const { return history; }
+
+double Lasso::calc_noise_var(MatrixXd& x, VectorXd& y) {
+	LinearRegression lr;
+	lr.fit_closed_form(x, y, false, false);
+	VectorXd coef = lr.getCoef();
+	VectorXd y_pred = lr.predict(x, coef, false);
+	double error_2 = (y - y_pred).transpose() * (y - y_pred);
+	return error_2 / (x.rows() - x.cols());
+}
+
+double Lasso::get_degree_of_freedom(VectorXd& coef) {
+	double d = coef.rows() - 1;
+	for (int i = 0; i < coef.rows() - 1; i++) {
+		if (coef(i, 0) == 0) {
+			d--;
+		}
+	}
+	return d;
+}
 
 //Ridge實作
 Ridge::Ridge() {}
