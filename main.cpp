@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
 
     return 0;
 }*/
-
+/*
 int main(int argc, char** argv) {
     string path = argv[1];
     string path2 = argv[2];
@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
     plt::plot(log_as, w4);
     plt::xlabel("log alpha");
     plt::ylabel("weight");
-    plt::title("weight vs log(alpha)");*/
+    plt::title("weight vs log(alpha)");*//*
     plt::plot(log_as, aic_v,{{"label", "AIC"}});
     plt::plot(log_as, bic_v, { {"label", "BIC"} });
     plt::xlabel("log alpha");
@@ -101,3 +101,33 @@ int main(int argc, char** argv) {
 
     return 0;
 }
+*/
+/**/
+int main(int argc, char** argv) {
+    string path = argv[1];
+    string path2 = argv[2];
+    Data<double> df(path, true, false);
+    vector<string> df_idxs = df.getIndexs();
+    vector<string>YM;
+    for (string idx : df_idxs) {
+        YM.push_back(idx.substr(0, 6));
+    }
+    unordered_map<string, vector<string>>YMap = { {"YM",YM} };
+    df.addColumns(YMap);
+    df.setIndex("YM");
+    Data<double> df_avg = df.groupby("YM", "mean");
+    Data<double> df2(path2, true, false);
+    df_avg.merge(df2);
+
+    Matrix<double, Dynamic, Dynamic> mar = df_avg.getMatrix();
+
+    Lasso_LARS reg;
+    reg.set_params({ {"iters",10000},{"error",0.01},{"alpha",10} });
+    reg.get_params();
+    MatrixXd x = mar.block(0, 0, mar.rows(), 4);
+    VectorXd y = mar.block(0, 6, mar.rows(), 1);
+    reg.fit(x, y);
+
+    return 0;
+}
+/**/

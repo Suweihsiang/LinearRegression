@@ -7,6 +7,7 @@
 #include<eigen3/Eigen/Dense>
 #include<eigen3/unsupported/Eigen/matrixfunctions>
 #include<vector>
+#include<algorithm>
 #include<random>
 #include<unordered_map>
 #include<string>
@@ -17,7 +18,9 @@ using std::unordered_map;
 using std::string;
 using std::cout;
 using std::endl;
-using std::sqrt;
+using std::sort;
+using std::generate;
+using std::min;
 using std::random_device;
 using std::mt19937;
 using std::uniform_real_distribution;
@@ -26,6 +29,7 @@ using Eigen::VectorXd;
 using Eigen::MatrixXd;
 using Eigen::Dynamic;
 using Eigen::ArrayXd;
+using Eigen::Index;
 
 class Lasso {
 public:
@@ -50,6 +54,20 @@ protected:
 private:
 	int iters = 1000;
 	double error = 0;
+};
+
+class Lasso_LARS {
+public:
+	Lasso_LARS();
+	~Lasso_LARS();
+	void set_params(unordered_map<string, double> params);
+	void get_params();
+	void fit(MatrixXd& x, VectorXd& y,string criterion = "aic");
+private:
+	int iters = 10000;
+	double error = 0;
+	double AIC;
+	double BIC;
 };
 
 class Ridge : public Lasso{
