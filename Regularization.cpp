@@ -125,10 +125,13 @@ void Lasso_LARS::set_params(unordered_map<string, double> params) {
 	if (params.find("error") != params.end()) {
 		error = params["error"];
 	}
+	if (params.find("alpha") != params.end()) {
+		alpha = params["alpha"];
+	}
 }
 
 void Lasso_LARS::get_params() {
-	cout << "iterations = " << iters << ", error = " << error << endl;
+	cout << "iterations = " << iters << ", error = " << error << ", alpha = " << alpha << endl;
 }
 
 void Lasso_LARS::fit(MatrixXd& x, VectorXd& y, string criterion) {
@@ -140,7 +143,8 @@ void Lasso_LARS::fit(MatrixXd& x, VectorXd& y, string criterion) {
 	vector<int>in_active(x.cols());
 	generate(in_active.begin(), in_active.end(), [] {static int in_num = 0; return in_num++; });
 	vector<VectorXd>coef_path;
-	vector<double>alpha_path(max_feature + 1);
+	vector<double>alpha_path;
+	VectorXd sign_active = VectorXd::Zero(x.cols());
 	bool changed_gamma = false;
 	coef_path.push_back(coef);
 	int next_j = -1;
@@ -149,90 +153,113 @@ void Lasso_LARS::fit(MatrixXd& x, VectorXd& y, string criterion) {
 		VectorXd y_pred = x * coef;
 		VectorXd corr = x.transpose() * (y - y_pred);
 		double C = corr.array().abs().maxCoeff();
+
+		double C_alpha = corr.maxCoeff();
+		double alpha_ = C_alpha / m;
+		alpha_path.push_back(alpha_);
+
+		if (alpha_ < alpha) {
+			if (alpha_path.size() > 1) {
+				double ss = (*(alpha_path.end() - 2) - alpha) / (*(alpha_path.end() - 2) - alpha_);
+				VectorXd prev_coef = *(coef_path.end() - 2);
+				coef = prev_coef + ss * (coef - prev_coef);
+				coef_path.back() = coef;
+			}
+			alpha_path.back() = alpha;
+			break;
+		}
+
 		if (!changed_gamma) {
 			double Cabs_max = 0.0;
 			for (int i = 0; i < in_active.size(); i++) {
 				int idx = in_active[i];
 				double Cabs_idx = abs(corr[idx]);
-				if (Cabs_idx >= Cabs_max) {
+				if (Cabs_idx > Cabs_max || (i == 0 && Cabs_idx >= Cabs_max)) {
 					Cabs_max = Cabs_idx;
 					next_j = idx;
 				}
 			}
 			active.push_back(next_j);
+			sign_active(active.size() - 1) = corr[next_j] / abs(corr[next_j]);
 			if (in_active.size() > 0) {
 				in_active.erase(find(in_active.begin(), in_active.end(), next_j));
 			}
 		}
 		MatrixXd Xa(x.rows(), active.size());
-		VectorXd sign_active(active.size());
 		int i = 0;
 		while (i < active.size()) {
 			int idx = active[i];
-			sign_active[i] = corr(idx) / abs(corr(idx));
 			Xa.col(i) = x.col(idx);
-			Xa.col(i) *= sign_active(i);
 			i++;
 		}
 		MatrixXd Ga = Xa.transpose() * Xa;
-		MatrixXd Ga_inv = Ga.inverse();
-		VectorXd Ia = VectorXd::Ones(active.size());
-		double Aa = 1 / sqrt(Ga_inv.sum());
-		VectorXd Wa = Aa * Ga_inv * Ia;
+		VectorXd sign_act = sign_active.head(active.size());
+		VectorXd Ga_inv = Ga.inverse() * sign_act;
+		double Aa = 1 / sqrt((Ga_inv.array() * sign_act.array()).sum());
+		VectorXd Wa = Aa * Ga_inv;
 		VectorXd ua = Xa * Wa;
 		VectorXd a = x.transpose() * ua;
 		double gamma = 0.0;
-		if (it < n - 1) {
-			for (int j = 0; j < n; j++) {
-				if (find(active.begin(), active.end(), j) != active.end()) {continue;}
-				double v0 = (C - corr(j)) / (Aa - a(j));
-				double v1 = (C + corr(j)) / (Aa + a(j));
-				if (v0 > 0 && (gamma == 0 || v0 < gamma)) {
-					gamma = v0;
-				}
-				if (v1 > 0 && (gamma == 0 || v1 < gamma)) {
-					gamma = v1;
-				}
+		for (int j = 0; j < n; j++) {
+			if (find(active.begin(), active.end(), j) != active.end()) { continue; }
+			double v0 = (C - corr(j)) / (Aa - a(j));
+			double v1 = (C + corr(j)) / (Aa + a(j));
+			if (v0 > 0 && (gamma == 0 || v0 < gamma)) {
+				gamma = v0;
+			}
+			if (v1 > 0 && (gamma == 0 || v1 < gamma)) {
+				gamma = v1;
 			}
 		}
-		else {
+		if (gamma == 0.0 || C / Aa < gamma) {
 			gamma = C / Aa;
 		}
 		double gamma_sc = 0.0;
-		vector<int> sc_idx;
+		int sc_j;
+		int sign_i;
 		for (int i = 0; i < active.size(); i++) {
 			int idx = active[i];
-			double d = sign_active[i] * Wa[i];
+			double d = Wa[i];
 			double c = coef[idx];
 			double g = -c / d;
-			
-			if ( g > 0 && (gamma_sc == 0.0 || g <= gamma_sc)) {
-				if (g < gamma_sc) {
-					sc_idx = vector<int>();
-				}
+
+			if (g > 0 && (gamma_sc == 0.0 || g < gamma_sc)) {
 				gamma_sc = g;
-				sc_idx.push_back(idx);
+				sc_j = idx;
+				sign_i = i;
 			}
 		}
 		changed_gamma = false;
 		if (gamma_sc > 0 && gamma_sc < gamma) {
+			next_j = sc_j;
 			gamma = gamma_sc;
+			sign_active[sign_i] = -sign_active[sign_i];
 			changed_gamma = true;
 		}
 		for (int j = 0; j < active.size(); j++) {
 			int idx = active[j];
-			coef(idx) += Wa(j) * gamma * sign_active[j];
+			coef(idx) += Wa(j) * gamma;
 		}
 		if (changed_gamma) {
-			for (const int i : sc_idx) {
-				active.erase(find(active.begin(),active.end(),i));
-				in_active.push_back(i);
+			active.erase(find(active.begin(), active.end(), next_j));
+			in_active.push_back(next_j);
+			if (sign_i != sign_active.rows() - 1) {
+				sign_active.block(sign_i, 0, sign_active.rows() - 1 - sign_i, 1) = sign_active.block(sign_i + 1, 0, sign_active.rows() - 1 - sign_i, 1).eval();
 			}
+			sign_active[sign_active.rows() - 1] = 0;
 		}
 		coef_path.push_back(coef);
 		it = active.size();
 	}
-	for(int i = 0; i < coef_path.size(); i++) {
+	if (alpha_path.size() != coef_path.size()) {
+		alpha_path.push_back((x.transpose()* (y - x * coef)).maxCoeff() / m);
+	}
+
+	for (int i = 0; i < alpha_path.size(); i++) {
+		cout << alpha_path[i] << " ";
+	}
+	cout << endl;
+	for (int i = 0; i < coef_path.size(); i++) {
 		cout << coef_path[i].transpose() << endl;
 	}
 }

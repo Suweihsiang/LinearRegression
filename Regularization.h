@@ -66,6 +66,7 @@ public:
 private:
 	int iters = 10000;
 	double error = 0;
+	double alpha = 0;
 	double AIC;
 	double BIC;
 };
