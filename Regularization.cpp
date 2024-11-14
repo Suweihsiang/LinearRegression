@@ -154,8 +154,7 @@ void Lasso_LARS::fit(MatrixXd& x, VectorXd& y, string criterion) {
 		VectorXd corr = x.transpose() * (y - y_pred);
 		double C = corr.array().abs().maxCoeff();
 
-		double C_alpha = corr.maxCoeff();
-		double alpha_ = C_alpha / m;
+		double alpha_ = C / m;
 		alpha_path.push_back(alpha_);
 
 		if (alpha_ < alpha) {
@@ -215,25 +214,27 @@ void Lasso_LARS::fit(MatrixXd& x, VectorXd& y, string criterion) {
 			gamma = C / Aa;
 		}
 		double gamma_sc = 0.0;
-		int sc_j;
-		int sign_i;
+		vector<int> sc_idx;
 		for (int i = 0; i < active.size(); i++) {
 			int idx = active[i];
 			double d = Wa[i];
 			double c = coef[idx];
 			double g = -c / d;
 
-			if (g > 0 && (gamma_sc == 0.0 || g < gamma_sc)) {
+			if (g > 0 && (gamma_sc == 0.0 || g <= gamma_sc)) {
+				if (g < gamma_sc) {
+					sc_idx = vector<int>();
+				}
 				gamma_sc = g;
-				sc_j = idx;
-				sign_i = i;
+				sc_idx.push_back(i);
 			}
 		}
 		changed_gamma = false;
 		if (gamma_sc > 0 && gamma_sc < gamma) {
-			next_j = sc_j;
 			gamma = gamma_sc;
-			sign_active[sign_i] = -sign_active[sign_i];
+			for (const int act_i : sc_idx) {
+				sign_active[act_i] = -sign_active[act_i];
+			}
 			changed_gamma = true;
 		}
 		for (int j = 0; j < active.size(); j++) {
@@ -241,12 +242,16 @@ void Lasso_LARS::fit(MatrixXd& x, VectorXd& y, string criterion) {
 			coef(idx) += Wa(j) * gamma;
 		}
 		if (changed_gamma) {
-			active.erase(find(active.begin(), active.end(), next_j));
-			in_active.push_back(next_j);
-			if (sign_i != sign_active.rows() - 1) {
-				sign_active.block(sign_i, 0, sign_active.rows() - 1 - sign_i, 1) = sign_active.block(sign_i + 1, 0, sign_active.rows() - 1 - sign_i, 1).eval();
+			for (int i = sc_idx.size() - 1; i >= 0; i--) {
+				int act_i = sc_idx[i];
+				int idx = active[act_i];
+				active.erase(active.begin() + act_i);
+				in_active.push_back(idx);
+				if (act_i != sign_active.rows() - 1) {
+					sign_active.block(act_i, 0, sign_active.rows() - 1 - act_i, 1) = sign_active.block(act_i + 1, 0, sign_active.rows() - 1 - act_i, 1).eval();
+				}
+				sign_active[sign_active.rows() - 1] = 0;
 			}
-			sign_active[sign_active.rows() - 1] = 0;
 		}
 		coef_path.push_back(coef);
 		it = active.size();
