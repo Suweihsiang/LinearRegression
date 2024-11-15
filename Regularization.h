@@ -12,6 +12,7 @@
 #include<unordered_map>
 #include<string>
 #include<cmath>
+#include<numeric>
 
 using std::vector;
 using std::unordered_map;
@@ -19,7 +20,6 @@ using std::string;
 using std::cout;
 using std::endl;
 using std::sort;
-using std::generate;
 using std::min;
 using std::random_device;
 using std::mt19937;
@@ -62,13 +62,22 @@ public:
 	~Lasso_LARS();
 	void set_params(unordered_map<string, double> params);
 	void get_params();
-	void fit(MatrixXd& x, VectorXd& y,string criterion = "aic");
+	void fit(MatrixXd& x, VectorXd& y,string criterion,bool fit_intercept);
+	double calc_IC(MatrixXd& x, VectorXd& y,VectorXd& coef, string criterion,bool fit_intercept);
+	vector<VectorXd> get_coef_path() const;
+	vector<double> get_alpha_path() const;
+	vector<double> get_criterions() const;
 private:
 	int iters = 10000;
-	double error = 0;
-	double alpha = 0;
-	double AIC;
-	double BIC;
+	double alpha_min = 0;
+	vector<VectorXd>coef_path;
+	vector<double>alpha_path;
+	vector<double>criterions;
+	double calc_noise_var(MatrixXd& x, VectorXd& y, bool fit_intercept);
+	double get_degree_of_freedom(VectorXd& coef,bool fit_intercept);
+	double alpha;
+	double IC;
+	VectorXd best_coef;
 };
 
 class Ridge : public Lasso{

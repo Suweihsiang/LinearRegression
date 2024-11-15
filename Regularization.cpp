@@ -122,28 +122,29 @@ void Lasso_LARS::set_params(unordered_map<string, double> params) {
 	if (params.find("iters") != params.end()) {
 		iters = params["iters"];
 	}
-	if (params.find("error") != params.end()) {
-		error = params["error"];
-	}
 	if (params.find("alpha") != params.end()) {
-		alpha = params["alpha"];
+		alpha_min = params["alpha"];
 	}
 }
 
 void Lasso_LARS::get_params() {
-	cout << "iterations = " << iters << ", error = " << error << ", alpha = " << alpha << endl;
+	cout << "iterations = " << iters << ", alpha = " << alpha_min << endl;
 }
 
-void Lasso_LARS::fit(MatrixXd& x, VectorXd& y, string criterion) {
+void Lasso_LARS::fit(MatrixXd& x, VectorXd& y, string criterion,bool fit_intercept) {
+	if (fit_intercept) {
+		for (int i = 0; i < x.cols(); i++) {
+			x.col(i) = x.col(i) - VectorXd::Ones(x.rows()) * x.col(i).mean();
+		}
+		y = y - VectorXd::Ones(y.rows()) * y.mean();
+	}
 	int m = x.rows();
 	int n = x.cols();
 	int max_feature = min(n, iters);
 	VectorXd coef = VectorXd::Zero(x.cols());
 	vector<int> active;
 	vector<int>in_active(x.cols());
-	generate(in_active.begin(), in_active.end(), [] {static int in_num = 0; return in_num++; });
-	vector<VectorXd>coef_path;
-	vector<double>alpha_path;
+	iota(in_active.begin(), in_active.end(), 0);
 	VectorXd sign_active = VectorXd::Zero(x.cols());
 	bool changed_gamma = false;
 	coef_path.push_back(coef);
@@ -153,21 +154,25 @@ void Lasso_LARS::fit(MatrixXd& x, VectorXd& y, string criterion) {
 		VectorXd y_pred = x * coef;
 		VectorXd corr = x.transpose() * (y - y_pred);
 		double C = corr.array().abs().maxCoeff();
-
+		double crit = calc_IC(x, y, coef, criterion, fit_intercept);
+		criterions.push_back(crit);
+		
 		double alpha_ = C / m;
 		alpha_path.push_back(alpha_);
 
-		if (alpha_ < alpha) {
+		if (alpha_ < alpha_min) {
 			if (alpha_path.size() > 1) {
-				double ss = (*(alpha_path.end() - 2) - alpha) / (*(alpha_path.end() - 2) - alpha_);
+				double ss = (*(alpha_path.end() - 2) - alpha_min) / (*(alpha_path.end() - 2) - alpha_);
 				VectorXd prev_coef = *(coef_path.end() - 2);
 				coef = prev_coef + ss * (coef - prev_coef);
 				coef_path.back() = coef;
 			}
-			alpha_path.back() = alpha;
+			alpha_path.back() = alpha_min;
+			double crit = calc_IC(x, y, coef, criterion, fit_intercept);
+			criterions.back() = crit;
 			break;
 		}
-
+		
 		if (!changed_gamma) {
 			double Cabs_max = 0.0;
 			for (int i = 0; i < in_active.size(); i++) {
@@ -258,8 +263,21 @@ void Lasso_LARS::fit(MatrixXd& x, VectorXd& y, string criterion) {
 	}
 	if (alpha_path.size() != coef_path.size()) {
 		alpha_path.push_back((x.transpose()* (y - x * coef)).maxCoeff() / m);
+		double crit = calc_IC(x, y, coef, criterion, fit_intercept);
+		criterions.push_back(crit);
 	}
-
+	double min_IC = criterions[0];
+	int best_idx = 0;
+	for (int i = 0; i < criterions.size(); i++) {
+		cout << criterions[i] << " ";
+		if (criterions[i] < min_IC) {
+			best_idx = i;
+			min_IC = criterions[i];
+			best_coef = coef_path[i];
+			alpha = alpha_path[i];
+		}
+	}
+	cout << endl;
 	for (int i = 0; i < alpha_path.size(); i++) {
 		cout << alpha_path[i] << " ";
 	}
@@ -267,7 +285,46 @@ void Lasso_LARS::fit(MatrixXd& x, VectorXd& y, string criterion) {
 	for (int i = 0; i < coef_path.size(); i++) {
 		cout << coef_path[i].transpose() << endl;
 	}
+	cout << "min IC = " << min_IC << " alpha = " << alpha << " best coef = " << best_coef.transpose() << endl;
 }
+
+double Lasso_LARS::calc_IC(MatrixXd& x, VectorXd& y, VectorXd& coef, string criterion,bool fit_intercept) {
+	double n = x.cols();
+	double m = x.rows();
+	VectorXd y_pred = x * coef;
+	double d = get_degree_of_freedom(coef,fit_intercept);
+	double noise_var = calc_noise_var(x, y,fit_intercept);
+	double sse = (y - y_pred).transpose() * (y - y_pred);
+	double factor = (criterion == "aic") ? 2 : log(m);
+	IC = factor * d + m * log(2 * M_PI * noise_var) + sse / noise_var;
+	return IC;
+}
+
+double Lasso_LARS::calc_noise_var(MatrixXd& x, VectorXd& y, bool fit_intercept) {
+	LinearRegression lr;
+	lr.fit_closed_form(x, y, false, false);
+	VectorXd coef = lr.getCoef();
+	VectorXd y_pred = lr.predict(x, coef, false);
+	double error_2 = (y - y_pred).transpose() * (y - y_pred);
+	if (fit_intercept) { return error_2 / (x.rows() - x.cols() - 1); }
+	else { return error_2 / (x.rows() - x.cols()); }
+}
+
+double Lasso_LARS::get_degree_of_freedom(VectorXd& coef,bool fit_intercept) {
+	double d = coef.rows();
+	for (int i = 0; i < coef.rows(); i++) {
+		if (coef(i, 0) == 0) {
+			d--;
+		}
+	}
+	return d;
+}
+
+vector<VectorXd> Lasso_LARS::get_coef_path() const { return coef_path; }
+
+vector<double> Lasso_LARS::get_alpha_path() const { return alpha_path; }
+
+vector<double> Lasso_LARS::get_criterions()const { return criterions; }
 
 //Ridge¹ê§@
 Ridge::Ridge() {}
