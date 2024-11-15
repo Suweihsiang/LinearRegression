@@ -122,11 +122,24 @@ int main(int argc, char** argv) {
     Matrix<double, Dynamic, Dynamic> mar = df_avg.getMatrix();
 
     Lasso_LARS reg;
-    reg.set_params({ {"iters",10000},{"error",0.01},{"alpha",0} });
+    reg.set_params({ {"iters",10000},{"alpha",0} });
     reg.get_params();
     MatrixXd x = mar.block(0, 0, mar.rows(), 4);
     VectorXd y = mar.block(0, 6, mar.rows(), 1);
-    reg.fit(x, y);
+    reg.fit(x, y, "bic", false);
+    vector<double> bics = reg.get_criterions();
+    Lasso_LARS reg1;
+    reg1.set_params({ {"iters",10000},{"alpha",0} });
+    reg1.get_params();
+    reg1.fit(x, y, "aic", false);
+    vector<double> aics = reg1.get_criterions();
+    plt::plot(aics, {{"label", "AIC"}});
+    plt::plot(bics, { {"label", "BIC"} });
+    plt::xlabel("sequence");
+    plt::ylabel("criterion");
+    plt::legend();
+    plt::title("AIC vs BIC");
+    plt::show();
 
     return 0;
 }
