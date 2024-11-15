@@ -63,7 +63,7 @@ public:
 	void set_params(unordered_map<string, double> params);
 	void get_params();
 	void fit(MatrixXd& x, VectorXd& y,string criterion,bool fit_intercept);
-	double calc_IC(MatrixXd& x, VectorXd& y,VectorXd& coef, string criterion,bool fit_intercept);
+	double calc_IC(MatrixXd& x, VectorXd& y, VectorXd& coef, string criterion, bool fit_intercept, double noise_var);
 	vector<VectorXd> get_coef_path() const;
 	vector<double> get_alpha_path() const;
 	vector<double> get_criterions() const;
@@ -75,6 +75,7 @@ private:
 	vector<double>criterions;
 	double calc_noise_var(MatrixXd& x, VectorXd& y, bool fit_intercept);
 	double get_degree_of_freedom(VectorXd& coef,bool fit_intercept);
+	double noise_variance = -1.0;
 	double alpha;
 	double IC;
 	VectorXd best_coef;

@@ -154,7 +154,7 @@ void Lasso_LARS::fit(MatrixXd& x, VectorXd& y, string criterion,bool fit_interce
 		VectorXd y_pred = x * coef;
 		VectorXd corr = x.transpose() * (y - y_pred);
 		double C = corr.array().abs().maxCoeff();
-		double crit = calc_IC(x, y, coef, criterion, fit_intercept);
+		double crit = calc_IC(x, y, coef, criterion, fit_intercept,noise_variance);
 		criterions.push_back(crit);
 		
 		double alpha_ = C / m;
@@ -168,7 +168,7 @@ void Lasso_LARS::fit(MatrixXd& x, VectorXd& y, string criterion,bool fit_interce
 				coef_path.back() = coef;
 			}
 			alpha_path.back() = alpha_min;
-			double crit = calc_IC(x, y, coef, criterion, fit_intercept);
+			double crit = calc_IC(x, y, coef, criterion, fit_intercept,noise_variance);
 			criterions.back() = crit;
 			break;
 		}
@@ -263,7 +263,7 @@ void Lasso_LARS::fit(MatrixXd& x, VectorXd& y, string criterion,bool fit_interce
 	}
 	if (alpha_path.size() != coef_path.size()) {
 		alpha_path.push_back((x.transpose()* (y - x * coef)).maxCoeff() / m);
-		double crit = calc_IC(x, y, coef, criterion, fit_intercept);
+		double crit = calc_IC(x, y, coef, criterion, fit_intercept,noise_variance);
 		criterions.push_back(crit);
 	}
 	double min_IC = criterions[0];
@@ -288,12 +288,14 @@ void Lasso_LARS::fit(MatrixXd& x, VectorXd& y, string criterion,bool fit_interce
 	cout << "min IC = " << min_IC << " alpha = " << alpha << " best coef = " << best_coef.transpose() << endl;
 }
 
-double Lasso_LARS::calc_IC(MatrixXd& x, VectorXd& y, VectorXd& coef, string criterion,bool fit_intercept) {
+double Lasso_LARS::calc_IC(MatrixXd& x, VectorXd& y, VectorXd& coef, string criterion,bool fit_intercept,double noise_var) {
 	double n = x.cols();
 	double m = x.rows();
 	VectorXd y_pred = x * coef;
 	double d = get_degree_of_freedom(coef,fit_intercept);
-	double noise_var = calc_noise_var(x, y,fit_intercept);
+	if (noise_var < 0) {
+		noise_var = calc_noise_var(x, y, fit_intercept);
+	}
 	double sse = (y - y_pred).transpose() * (y - y_pred);
 	double factor = (criterion == "aic") ? 2 : log(m);
 	IC = factor * d + m * log(2 * M_PI * noise_var) + sse / noise_var;
@@ -306,8 +308,8 @@ double Lasso_LARS::calc_noise_var(MatrixXd& x, VectorXd& y, bool fit_intercept) 
 	VectorXd coef = lr.getCoef();
 	VectorXd y_pred = lr.predict(x, coef, false);
 	double error_2 = (y - y_pred).transpose() * (y - y_pred);
-	if (fit_intercept) { return error_2 / (x.rows() - x.cols() - 1); }
-	else { return error_2 / (x.rows() - x.cols()); }
+	noise_variance = (fit_intercept)? error_2 / (x.rows() - x.cols() - 1): error_2 / (x.rows() - x.cols());
+	return noise_variance;
 }
 
 double Lasso_LARS::get_degree_of_freedom(VectorXd& coef,bool fit_intercept) {
