@@ -56,6 +56,7 @@ public:
 	void addColumns(unordered_map<string, vector<string>>m);
 	void removeColumn(int ColToRemove);
 	void removeColumns(vector<string>fts);
+	void renameColumns(unordered_map<string, string>names);
 	void sortbyIndex(bool ascending);
 	void sortby(string feature,bool ascedning);
 	Data<T> groupby(string feature, string operate);

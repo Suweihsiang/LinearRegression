@@ -362,6 +362,17 @@ void Data<T>::removeColumns(vector<string>fts) {
 }
 
 template<typename T>
+void Data<T>::renameColumns(unordered_map<string, string>names) {
+	for (const auto& name : names) {
+		vector<string>::iterator it = find(features.begin(), features.end(), name.first);
+		if (it != features.end()) {
+			int idx = distance(features.begin(), it);
+			features[idx] = name.second;
+		}
+	}
+}
+
+template<typename T>
 void Data<T>::sortbyIndex(bool ascending) {
 	if (!hasIndexRows) {
 		return;
