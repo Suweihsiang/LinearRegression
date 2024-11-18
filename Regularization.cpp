@@ -113,6 +113,21 @@ double Lasso::get_degree_of_freedom(VectorXd& coef) {
 	return d;
 }
 
+void Lasso::save_result(string path,string mode) {
+	ofstream dataFile;
+	if (mode == "new") {
+		dataFile.open(path, ios::out | ios::trunc);
+	}
+	else {
+		dataFile.open(path, ios::out | ios::app);
+	}
+	dataFile << "--------------------------------------------------------------------------" << endl;
+	dataFile << "iterations = " << iters << ", alpha = " << alpha << endl;
+	dataFile << "coef : " << coef.transpose() << endl;
+	dataFile << "score = " << r_2 << endl;
+	dataFile.close();
+}
+
 //Lasso_LARS實作
 Lasso_LARS::Lasso_LARS() {}
 
@@ -327,6 +342,33 @@ vector<VectorXd> Lasso_LARS::get_coef_path() const { return coef_path; }
 vector<double> Lasso_LARS::get_alpha_path() const { return alpha_path; }
 
 vector<double> Lasso_LARS::get_criterions()const { return criterions; }
+
+void Lasso_LARS::save_result(string path) {
+	ofstream dataFile;
+	dataFile.open(path, ios::out | ios::trunc);
+	dataFile << "iterations : " << iters << " alpha min : " << alpha_min << endl;
+	dataFile << endl;
+	dataFile << "criterions : " << endl;
+	for (int i = 0; i < criterions.size(); i++) {
+		dataFile << criterions[i] << "   ";
+	}
+	dataFile << endl;
+	dataFile << endl;
+	dataFile << "alphas : " << endl;
+	for (int i = 0; i < alpha_path.size(); i++) {
+		dataFile << alpha_path[i] << "   ";
+	}
+	dataFile << endl;
+	dataFile << endl;
+	dataFile << "coef path : " << endl;
+	for (int i = 0; i < coef_path.size(); i++) {
+		dataFile << coef_path[i].transpose() << endl;
+	}
+	dataFile << "-------------------------------------------------------------------------------------" << endl;
+	dataFile << "best alpha : " << alpha << endl << "best coef :" << best_coef.transpose() << endl;
+	dataFile << "-------------------------------------------------------------------------------------" << endl;
+	dataFile.close();
+}
 
 //Ridge實作
 Ridge::Ridge() {}

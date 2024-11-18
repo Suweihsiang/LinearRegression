@@ -4,6 +4,7 @@
 #define _USE_MATH_DEFINES
 
 #include <iostream>
+#include<fstream>
 #include<eigen3/Eigen/Dense>
 #include<eigen3/unsupported/Eigen/matrixfunctions>
 #include<vector>
@@ -17,6 +18,8 @@
 using std::vector;
 using std::unordered_map;
 using std::string;
+using std::ofstream;
+using std::ios;
 using std::cout;
 using std::endl;
 using std::sort;
@@ -43,6 +46,7 @@ public:
 	double score(MatrixXd& x, VectorXd& y);
 	double calc_IC(MatrixXd& x, VectorXd& y,string criterion = "aic");
 	vector<double> gethistory() const;
+	void save_result(string path, string mode = "app");
 protected:
 	double alpha = 100;
 	double r_2;
@@ -67,6 +71,7 @@ public:
 	vector<VectorXd> get_coef_path() const;
 	vector<double> get_alpha_path() const;
 	vector<double> get_criterions() const;
+	void save_result(string path);
 private:
 	int iters = 10000;
 	double alpha_min = 0;
