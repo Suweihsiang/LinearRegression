@@ -8,6 +8,119 @@
 #include "utils.cuh"
 
 namespace plt = matplotlibcpp;
+
+int main(int argc, char** argv) {
+    string path = argv[1];
+    Data<double> df(path, true, false);
+    vector<string> df_idxs = df.getIndexs();
+    vector<string>YM;
+    for (string idx : df_idxs) {
+        YM.push_back(idx.substr(0, 6));
+    }
+    unordered_map<string, vector<string>>YMap = { {"YM",YM} };
+    df.addColumns(YMap);
+    df.setIndex("YM");
+    df.removeColumn(df.getColumns() - 1);
+    df.removeColumns({ "open","high","low","rate" });
+    df.renameColumns({ { "close",df.getDataname() } });
+    Data<double> df_avg = df.groupby("YM", "mean");
+    for (int i = 1; i < argc - 5; i++) {
+        Data<double> df(argv[i + 1], true, true);
+        df_idxs = df.getIndexs();
+        YM.clear();
+        for (string idx : df_idxs) {
+            YM.push_back(idx.substr(0, 6));
+        }
+        unordered_map<string, vector<string>>YMap = { {"YM",YM} };
+        df.addColumns(YMap);
+        df.setIndex("YM");
+        df.removeColumn(df.getColumns() - 1);
+        df.removeColumns({ "open","high","low" });
+        df.renameColumns({ { "close",df.getDataname() } });
+        Data<double> df_avg2 = df.groupby("YM", "mean");
+        df_avg.merge(df_avg2);
+    }
+    Data<double> df2(argv[argc - 4], true, false);
+    df_idxs = df2.getIndexs();
+    YM.clear();
+    for (string idx : df_idxs) {
+        YM.push_back(idx.substr(0, 6));
+    }
+    YMap = { {"YM",YM} };
+    df2.addColumns(YMap);
+    df2.setIndex("YM");
+    df2.removeColumn(df2.getColumns() - 1);
+    df2.removeColumns({ "MA20","MA60","MA120","MA240" });
+    df2.renameColumns({ { "Price",df2.getDataname() } });
+    Data<double> df_avg3 = df2.groupby("YM", "mean");
+    df_avg3.setDataname(df2.getDataname());
+    df_avg.merge(df_avg3);
+    Data<double> df3(argv[argc - 3], true, false);
+    df_idxs = df3.getIndexs();
+    YM.clear();
+    for (string idx : df_idxs) {
+        YM.push_back(idx.substr(0, 6));
+    }
+    YMap = { {"YM",YM} };
+    df3.addColumns(YMap);
+    df3.setIndex("YM");
+    df3.removeColumn(df3.getColumns() - 1);
+    df3.removeColumns({ "MA20","MA60","MA120" });
+    df3.renameColumns({ { "Price",df3.getDataname() } });
+    Data<double> df_avg4 = df3.groupby("YM", "mean");
+    df_avg4.setDataname(df3.getDataname());
+    df_avg.merge(df_avg4);
+    Data<double> df4(argv[argc - 2], true, false);
+    df_idxs = df4.getIndexs();
+    YM.clear();
+    for (string idx : df_idxs) {
+        YM.push_back(idx.substr(0, 6));
+    }
+    YMap = { {"YM",YM} };
+    df4.addColumns(YMap);
+    df4.setIndex("YM");
+    df4.removeColumn(df4.getColumns() - 1);
+    df4.removeColumns({ "open","high","low","rate" });
+    df4.renameColumns({ { "close","US10Y"} });
+    Data<double> df_avg5 = df4.groupby("YM", "mean");
+    df_avg5.setDataname(df4.getDataname());
+    df_avg.merge(df_avg5);
+    Data<double> df5(argv[argc - 1], true, false);
+    df_avg.merge(df5);
+
+    Matrix<double, Dynamic, Dynamic> mar = df_avg.getMatrix();
+
+    MatrixXd x = mar.block(0, 0, mar.rows(), 8);
+    VectorXd y = mar.block(0, 8, mar.rows(), 1);
+
+    for (int i = 0; i < x.cols(); i++) {
+        double xstd = (x.col(i) - x.col(i).mean() * VectorXd::Ones(x.rows())).transpose() * (x.col(i) - x.col(i).mean() * VectorXd::Ones(x.rows()));
+        x.col(i) = (x.col(i) - x.col(i).mean() * VectorXd::Ones(x.rows())) / std::sqrt(xstd / x.rows());
+    }
+    double ystd = (y - y.mean() * VectorXd::Ones(y.rows())).transpose() * (y - y.mean() * VectorXd::Ones(y.rows()));
+    y = (y - y.mean() * VectorXd::Ones(y.rows())) / std::sqrt(ystd / y.rows());
+
+
+    Lasso_LARS reg;
+    reg.set_params({ {"iters",10000},{"alpha",0} });
+    reg.get_params();
+    reg.fit(x, y, "bic", true);
+    vector<double> bics = reg.get_criterions();
+    Lasso_LARS reg1;
+    reg1.set_params({ {"iters",10000},{"alpha",0} });
+    reg1.get_params();
+    reg1.fit(x, y, "aic", true);
+    vector<double> aics = reg1.get_criterions();
+    plt::plot(aics, { {"label", "AIC"} });
+    plt::plot(bics, { {"label", "BIC"} });
+    plt::xlabel("sequence");
+    plt::ylabel("criterion");
+    plt::legend();
+    plt::title("AIC vs BIC");
+    plt::show();
+
+    return 0;
+}
 /*
 int main(int argc, char** argv) {
     string path = argv[1];
@@ -102,45 +215,3 @@ int main(int argc, char** argv) {
     return 0;
 }
 */
-/**/
-int main(int argc, char** argv) {
-    string path = argv[1];
-    string path2 = argv[2];
-    Data<double> df(path, true, false);
-    vector<string> df_idxs = df.getIndexs();
-    vector<string>YM;
-    for (string idx : df_idxs) {
-        YM.push_back(idx.substr(0, 6));
-    }
-    unordered_map<string, vector<string>>YMap = { {"YM",YM} };
-    df.addColumns(YMap);
-    df.setIndex("YM");
-    Data<double> df_avg = df.groupby("YM", "mean");
-    Data<double> df2(path2, true, false);
-    df_avg.merge(df2);
-
-    Matrix<double, Dynamic, Dynamic> mar = df_avg.getMatrix();
-
-    Lasso_LARS reg;
-    reg.set_params({ {"iters",10000},{"alpha",0} });
-    reg.get_params();
-    MatrixXd x = mar.block(0, 0, mar.rows(), 4);
-    VectorXd y = mar.block(0, 6, mar.rows(), 1);
-    reg.fit(x, y, "bic", false);
-    vector<double> bics = reg.get_criterions();
-    Lasso_LARS reg1;
-    reg1.set_params({ {"iters",10000},{"alpha",0} });
-    reg1.get_params();
-    reg1.fit(x, y, "aic", false);
-    vector<double> aics = reg1.get_criterions();
-    plt::plot(aics, {{"label", "AIC"}});
-    plt::plot(bics, { {"label", "BIC"} });
-    plt::xlabel("sequence");
-    plt::ylabel("criterion");
-    plt::legend();
-    plt::title("AIC vs BIC");
-    plt::show();
-
-    return 0;
-}
-/**/
