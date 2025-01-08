@@ -1,6 +1,6 @@
 ﻿#include "LinearRegression.h"
 #include "utils.cuh"
-//開始實作函式
+//implement
 LinearRegression::LinearRegression() {}
 
 LinearRegression::~LinearRegression() {}
@@ -23,23 +23,25 @@ void LinearRegression::get_params() {
 
 void LinearRegression::fit_gd(MatrixXd& x, VectorXd& y, bool CUDA_use,bool fit_intercept) {
 	if (fit_intercept) {
-		VectorXd intercept_ = VectorXd::Ones(x.rows());
+		VectorXd intercept_ = VectorXd::Ones(x.rows());//set intercepts all ones
 		x.conservativeResize(x.rows(), x.cols() + 1);
 		x.block(0, x.cols() - 1, x.rows(), 1) = intercept_;
 	}
+	//generate random coefficient uniformly from -1 to 1
 	random_device rd;
 	mt19937 gen(rd());
 	uniform_real_distribution<double> dis(-1.0, 1.0);
 	coef = VectorXd::NullaryExpr(x.cols(), [&]() {return dis(gen); });
 	cout << coef.transpose() << endl;
+	//
 	VectorXd y_pred(x.rows());
 	VectorXd errors(x.rows());
 	VectorXd delta(x.cols());
 	for (int i = 0; i < iters; i++) {
-		if (errors.array().abs().maxCoeff() < error) {
+		if (errors.array().abs().maxCoeff() < error) {//early stop
 			break;
 		}
-		if (CUDA_use) {
+		if (CUDA_use) {//use CUDA to multiply matrix
 			matvecmul_shared(x, coef, y_pred);
 			errors = y - y_pred;
 			MatrixXd xT = x.transpose();
@@ -63,11 +65,11 @@ void LinearRegression::fit_gd(MatrixXd& x, VectorXd& y, bool CUDA_use,bool fit_i
 
 void LinearRegression::fit_closed_form(MatrixXd& x, VectorXd& y, bool CUDA_use, bool fit_intercept) {
 	if (fit_intercept) {
-		VectorXd intercept_ = VectorXd::Ones(x.rows());
+		VectorXd intercept_ = VectorXd::Ones(x.rows());//set intercepts all ones
 		x.conservativeResize(x.rows(), x.cols() + 1);
 		x.block(0, x.cols() - 1, x.rows(), 1) = intercept_;
 	}
-	if (CUDA_use) {
+	if (CUDA_use) {//use CUDA to multiply matrix
 		MatrixXd xT = x.transpose();
 		MatrixXd xTx(x.cols(),x.cols());
 		VectorXd xTy(y.rows());
@@ -78,7 +80,7 @@ void LinearRegression::fit_closed_form(MatrixXd& x, VectorXd& y, bool CUDA_use, 
 		matmul_shared(xTx_inv, xTy, coef);
 	}
 	else {
-		coef = (x.transpose() * x).inverse() * x.transpose() * y;
+		coef = (x.transpose() * x).inverse() * x.transpose() * y;//closed form
 	}
 }
 

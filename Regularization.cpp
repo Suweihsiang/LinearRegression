@@ -1,7 +1,7 @@
 #include "Regularization.h"
 #include"LinearRegression.h"
 
-//Lasso實作
+//coordinate descent for lasso implement
 Lasso::Lasso() {}
 
 Lasso::~Lasso() {}
@@ -23,7 +23,7 @@ void Lasso::get_params() {
 }
 
 void Lasso::fit(MatrixXd& x, VectorXd& y) {
-	VectorXd intercept_ = VectorXd::Ones(x.rows());
+	VectorXd intercept_ = VectorXd::Ones(x.rows());//set intercepts all Ones
 	x.conservativeResize(x.rows(), x.cols() + 1);
 	x.block(0, x.cols() - 1, x.rows(), 1) = intercept_;
 	//random_device rd;
@@ -31,9 +31,10 @@ void Lasso::fit(MatrixXd& x, VectorXd& y) {
 	/*mt19937 gen(1);
 	uniform_real_distribution<double> dis(-1.0, 1.0);
 	coef = VectorXd::NullaryExpr(x.cols(), [&]() {return dis(gen); });*/
-	coef = VectorXd::Zero(x.cols());
-	VectorXd errors(x.rows());
+	coef = VectorXd::Zero(x.cols());//set initial coefficients all zeros
+	VectorXd errors(x.rows());//set errors all zeros
 	for (int i = 0; i < iters; i++) {
+		//coordinate descent for lasso
 		for (int i = 0; i < x.cols() ; i++) {
 			VectorXd x_i = x.col(i);
 			double xi_2 = x_i.transpose() * x_i;
@@ -53,9 +54,10 @@ void Lasso::fit(MatrixXd& x, VectorXd& y) {
 				coef(i, 0) = delta_i / xi_2;
 			}
 		}
+		//
 		errors = y - x * coef;
 		history.push_back((errors.dot(errors)) / 2);
-		if (errors.array().abs().maxCoeff() < error) {
+		if (errors.array().abs().maxCoeff() < error) {//early stop
 			break;
 		}
 	}
@@ -113,13 +115,13 @@ double Lasso::get_degree_of_freedom(VectorXd& coef) {
 	return d;
 }
 
-void Lasso::save_result(string path,string mode) {
+void Lasso::save_result(string path,string mode) {//mode can be "new" and "app"
 	ofstream dataFile;
 	if (mode == "new") {
-		dataFile.open(path, ios::out | ios::trunc);
+		dataFile.open(path, ios::out | ios::trunc);//save as a new file
 	}
 	else {
-		dataFile.open(path, ios::out | ios::app);
+		dataFile.open(path, ios::out | ios::app);//append new result to the existing file
 	}
 	dataFile << "--------------------------------------------------------------------------" << endl;
 	dataFile << "iterations = " << iters << ", alpha = " << alpha << endl;
@@ -128,7 +130,7 @@ void Lasso::save_result(string path,string mode) {
 	dataFile.close();
 }
 
-//Lasso_LARS實作
+//least angle regression algorithm for lasso implement
 Lasso_LARS::Lasso_LARS() {}
 
 Lasso_LARS::~Lasso_LARS(){}
@@ -370,7 +372,7 @@ void Lasso_LARS::save_result(string path) {
 	dataFile.close();
 }
 
-//Ridge實作
+//Ridge implement
 Ridge::Ridge() {}
 
 Ridge::~Ridge() {}

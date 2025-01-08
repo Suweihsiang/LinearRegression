@@ -34,64 +34,64 @@ using Eigen::Dynamic;
 using Eigen::ArrayXd;
 using Eigen::Index;
 
-class Lasso {
+class Lasso {														   //coordinate descent for lasso
 public:
-	Lasso();
-	~Lasso();
-	void set_params(unordered_map<string, double> params);
-	void get_params();
+	Lasso();														   //constructor
+	~Lasso();														   //destructor
+	void set_params(unordered_map<string, double> params);			   //set parameters
+	void get_params();												   //show parameters
 	void fit(MatrixXd& x, VectorXd& y);
 	VectorXd predict(MatrixXd& x, VectorXd& coef);
 	VectorXd getCoef() const;
-	double score(MatrixXd& x, VectorXd& y);
-	double calc_IC(MatrixXd& x, VectorXd& y,string criterion = "aic");
-	vector<double> gethistory() const;
-	void save_result(string path, string mode = "app");
+	double score(MatrixXd& x, VectorXd& y);							   //calculate R2
+	double calc_IC(MatrixXd& x, VectorXd& y,string criterion = "aic"); //calculate AIC,BIC
+	vector<double> gethistory() const;								   //errors of each epoch
+	void save_result(string path, string mode = "app");				   //save result
 protected:
-	double alpha = 100;
+	double alpha = 100;												   //L1 penalty(Lasso),L2 penalty(Ridge)
 	double r_2;
-	double IC;
+	double IC;														   //AIC or BIC
 	VectorXd coef;
 	vector<double>history;
-	double calc_noise_var(MatrixXd& x, VectorXd& y);
-	double get_degree_of_freedom(VectorXd& coef);
+	double calc_noise_var(MatrixXd& x, VectorXd& y);				   //calculate for noise variance in order to calculate AIC,BIC
+	double get_degree_of_freedom(VectorXd& coef);					   //get degree of freedom inorder to calculate AIC,BIC
 private:
 	int iters = 1000;
 	double error = 0;
 };
 
-class Lasso_LARS {
+class Lasso_LARS {														//least angle regression algorithm
 public:
-	Lasso_LARS();
-	~Lasso_LARS();
-	void set_params(unordered_map<string, double> params);
-	void get_params();
+	Lasso_LARS();//constructor
+	~Lasso_LARS();//destructor
+	void set_params(unordered_map<string, double> params);				//set parameters
+	void get_params();													//show parameters
 	void fit(MatrixXd& x, VectorXd& y,string criterion,bool fit_intercept);
-	double calc_IC(MatrixXd& x, VectorXd& y, VectorXd& coef, string criterion, bool fit_intercept, double noise_var);
-	vector<VectorXd> get_coef_path() const;
-	vector<double> get_alpha_path() const;
-	vector<double> get_criterions() const;
-	void save_result(string path);
+	double calc_IC(MatrixXd& x, VectorXd& y, VectorXd& coef, string criterion, bool fit_intercept, double noise_var);//calculate AIC,BIC
+	vector<VectorXd> get_coef_path() const;								//get corresponding coefficients of each lasso path
+	vector<double> get_alpha_path() const;								//get corresponding L1 penalty of each lasso path
+	vector<double> get_criterions() const;								//get corresponding AIC,BIC of each lasso path
+	void save_result(string path);										//save result as csv file
 private:
 	int iters = 10000;
 	double alpha_min = 0;
-	vector<VectorXd>coef_path;
-	vector<double>alpha_path;
-	vector<double>criterions;
-	double calc_noise_var(MatrixXd& x, VectorXd& y, bool fit_intercept);
-	double get_degree_of_freedom(VectorXd& coef,bool fit_intercept);
+	vector<VectorXd>coef_path;											//corresponding coefficients of each lasso path
+	vector<double>alpha_path;											//corresponding L1 penalty of each lasso path
+	vector<double>criterions;											//corresponding AIC,BIC of each lasso path
+	double calc_noise_var(MatrixXd& x, VectorXd& y, bool fit_intercept);//calculate for noise variance in order to calculate AIC,BIC
+	double get_degree_of_freedom(VectorXd& coef,bool fit_intercept);	//get degree of freedom inorder to calculate AIC,BIC
 	double noise_variance = -1.0;
-	double alpha;
-	double IC;
+	double alpha;														//L1 penalty
+	double IC;															//AIC or BIC
 	VectorXd best_coef;
 };
 
-class Ridge : public Lasso{
+class Ridge : public Lasso{									//inherit some members and function from Lasso
 public:
-	Ridge();
-	~Ridge();
-	void set_params(unordered_map<string, double> params);
-	void get_params();
+	Ridge();												//constructor
+	~Ridge();												//destructor
+	void set_params(unordered_map<string, double> params);  //set parameters
+	void get_params();										//show parameters
 	void fit(MatrixXd& x, VectorXd& y);
 };
 #endif

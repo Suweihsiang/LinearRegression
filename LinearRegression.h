@@ -24,19 +24,19 @@ using Eigen::ArrayXd;
 
 class LinearRegression {
 public:
-	LinearRegression();
-	~LinearRegression();
-	void set_params(unordered_map<string,double> params);
-	void get_params();
-	void fit_gd(MatrixXd& x, VectorXd& y, bool CUDA_use, bool fit_intercept);
-	void fit_closed_form(MatrixXd& x, VectorXd& y, bool CUDA_use,bool fit_intercept);
-	VectorXd predict(MatrixXd& x, VectorXd& coef, bool CUDA_use);
-	VectorXd getCoef() const;
-	double score(MatrixXd& x, VectorXd& y);
-	vector<double> gethistory() const;
+	LinearRegression();																 //constructor
+	~LinearRegression();															 //destructor
+	void set_params(unordered_map<string,double> params);							 //set parameters
+	void get_params();																 //show the parameters
+	void fit_gd(MatrixXd& x, VectorXd& y, bool CUDA_use, bool fit_intercept);	     //fit linear regression by gradient descent 
+	void fit_closed_form(MatrixXd& x, VectorXd& y, bool CUDA_use,bool fit_intercept);//fit linear regression by closed form
+	VectorXd predict(MatrixXd& x, VectorXd& coef, bool CUDA_use);					 //predict
+	VectorXd getCoef() const;														 //show the coeficient
+	double score(MatrixXd& x, VectorXd& y);											 //get R2
+	vector<double> gethistory() const;												 //errors of each epoch by gradient descent
 protected:
-	int iters = 1000;
-	double lr = 0.01;
+	int iters = 1000;															     //gradient descent iterations
+	double lr = 0.01;																 //gradient descent learning rate
 	double error = 0;
 	double r_2;
 	VectorXd coef;
