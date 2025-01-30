@@ -49,3 +49,7 @@
 ![image](https://github.com/Suweihsiang/LinearRegression/blob/main/image/lars_path.png)  
 ![image](https://github.com/Suweihsiang/LinearRegression/blob/main/image/aic.png)  
   
+### 不同組alpha及coef對應之AIC與BIC  
+![image](https://github.com/Suweihsiang/LinearRegression/blob/main/image/AIC_BIC_cpp.png)  
+![image](https://github.com/Suweihsiang/LinearRegression/blob/main/image/AIC_BIC_py.png)  
+  
